@@ -17,6 +17,8 @@ let step = 0;
 let calYear = new Date().getFullYear();
 let calMonth = new Date().getMonth();
 let bookedTimes = [];
+let activeTab = "book";
+let prepayChecked = false;
 
 const booking = {
   date: null,
@@ -28,6 +30,18 @@ const booking = {
 const screen = document.getElementById("screen");
 const progressFill = document.getElementById("progressFill");
 const stepLabels = document.querySelectorAll("#stepLabels span");
+const progressBlock = document.querySelector(".progress");
+const stepsBlock = document.getElementById("stepLabels");
+const tabsEl = document.getElementById("tabs");
+
+function calcPrepayment(total) {
+  const cfg = catalog?.config || {};
+  const percent = cfg.prepayPercent ?? 50;
+  const min = cfg.prepayMin ?? 300;
+  if (total <= 0) return 0;
+  const amount = Math.max(min, Math.round(total * percent / 100));
+  return Math.min(amount, total);
+}
 
 async function loadCatalog() {
   if (window.KRIVEN_CATALOG) {
@@ -55,10 +69,28 @@ function formatDateLabel(iso) {
   return `${WEEKDAYS[(d.getDay() + 6) % 7]}, ${d.getDate()} ${MONTHS[d.getMonth()]}`;
 }
 
+function setBookingFlowVisible(visible) {
+  if (progressBlock) progressBlock.style.display = visible ? "" : "none";
+  if (stepsBlock) stepsBlock.style.display = visible ? "" : "none";
+}
+
 function updateProgress() {
   const pct = ((step + 1) / 5) * 100;
   progressFill.style.width = pct + "%";
   stepLabels.forEach((el, i) => el.classList.toggle("active", i === step));
+}
+
+function setActiveTab(tab) {
+  activeTab = tab;
+  tabsEl?.querySelectorAll(".tab").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.tab === tab);
+  });
+  setBookingFlowVisible(tab === "book");
+  if (tab === "book") {
+    renderDateScreen();
+  } else {
+    renderMyBookingsScreen();
+  }
 }
 
 let mainButtonHandler = null;
@@ -89,12 +121,17 @@ async function submitBooking() {
     tg?.showAlert?.("Заполни все поля");
     return;
   }
+  if (!prepayChecked) {
+    tg?.showAlert?.("Подтверди, что перевёл предоплату");
+    return;
+  }
 
   const payload = {
     date: booking.date,
     time: booking.time,
     haircut: booking.haircut,
     beard: booking.beard,
+    prepayment_confirmed: true,
   };
 
   const btn = document.getElementById("confirmBtn");
@@ -157,6 +194,67 @@ function renderSuccessScreen(message) {
   }
 }
 
+async function renderMyBookingsScreen() {
+  hideMainButton();
+  screen.innerHTML = `<div class="loading">Загрузка записей...</div>`;
+
+  if (!tg?.initData) {
+    screen.innerHTML = `
+      <div class="screen-title">Мои записи</div>
+      <div class="empty-state">Открой Mini App через кнопку в боте</div>
+    `;
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/my-bookings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ initData: tg.initData }),
+    });
+    const data = await res.json();
+
+    if (!data.ok) {
+      screen.innerHTML = `
+        <div class="screen-title">Мои записи</div>
+        <div class="empty-state">${data.error || "Не удалось загрузить"}</div>
+      `;
+      return;
+    }
+
+    if (!data.bookings?.length) {
+      screen.innerHTML = `
+        <div class="screen-title">Мои записи</div>
+        <div class="empty-state">Пока нет записей.<br>Нажми «Записаться».</div>
+      `;
+      return;
+    }
+
+    screen.innerHTML = `
+      <div class="screen-title">Мои записи</div>
+      <div class="bookings-list">
+        ${data.bookings.map((b) => `
+          <div class="booking-card">
+            <div class="booking-date">${b.date_label}</div>
+            <div class="booking-time">${b.time}</div>
+            <div class="booking-services">${b.haircut} · ${b.beard}</div>
+            <div class="booking-prices">
+              <span>Итого ${formatPrice(b.total)}</span>
+              <span class="prepay-badge">Предоплата ${formatPrice(b.prepayment)}</span>
+            </div>
+            <div class="booking-rest">Остаток в барбершопе: ${formatPrice(b.rest)}</div>
+          </div>
+        `).join("")}
+      </div>
+    `;
+  } catch {
+    screen.innerHTML = `
+      <div class="screen-title">Мои записи</div>
+      <div class="empty-state">Ошибка сети. Попробуй позже.</div>
+    `;
+  }
+}
+
 function getAvailableDates() {
   const cfg = catalog.config;
   const today = new Date();
@@ -202,6 +300,7 @@ async function fetchBookedTimes(isoDate) {
 }
 
 function renderDateScreen() {
+  if (activeTab !== "book") return;
   step = 0;
   updateProgress();
   hideMainButton();
@@ -287,7 +386,7 @@ async function renderTimeScreen() {
   });
 }
 
-function renderServiceCards(items, selectedKey, onSelect) {
+function renderServiceCards(items, selectedKey) {
   return Object.entries(items).map(([key, item]) => `
     <div class="service-card${selectedKey === key ? " selected" : ""}" data-key="${key}">
       <div class="left">
@@ -343,13 +442,23 @@ function renderBeardScreen() {
   });
 }
 
+function updateConfirmButton() {
+  const btn = document.getElementById("confirmBtn");
+  if (btn) btn.disabled = !prepayChecked;
+}
+
 function renderConfirmScreen() {
   step = 4;
   updateProgress();
+  prepayChecked = false;
 
   const hair = catalog.haircuts[booking.haircut];
   const beard = catalog.beards[booking.beard];
   const total = hair.price + beard.price;
+  const prepay = calcPrepayment(total);
+  const rest = total - prepay;
+  const cfg = catalog.config;
+  const percent = cfg.prepayPercent ?? 50;
 
   screen.innerHTML = `
     <button class="back-btn" id="backBtn">◀ Назад</button>
@@ -364,20 +473,44 @@ function renderConfirmScreen() {
         <span class="amount">${formatPrice(total)}</span>
       </div>
     </div>
-    <button type="button" class="confirm-btn" id="confirmBtn">Записаться</button>
+    <div class="prepay-box">
+      <div class="prepay-title">Предоплата ${percent}%</div>
+      <div class="prepay-amount">${formatPrice(prepay)}</div>
+      <div class="prepay-rest">Остаток в барбершопе: ${formatPrice(rest)}</div>
+      <div class="prepay-hint">Переведи по СБП:</div>
+      <div class="prepay-phone">${cfg.prepayPhone || "+79000000000"}</div>
+      <div class="prepay-name">${cfg.prepayName || "KRIVEN BARBERS"}</div>
+      <div class="prepay-comment">В комментарии: ${formatDateLabel(booking.date)} ${booking.time}</div>
+    </div>
+    <label class="prepay-check">
+      <input type="checkbox" id="prepayCheck" />
+      <span>Подтверждаю, что перевёл предоплату</span>
+    </label>
+    <button type="button" class="confirm-btn" id="confirmBtn" disabled>Записаться</button>
   `;
 
   document.getElementById("backBtn").onclick = renderBeardScreen;
+  document.getElementById("prepayCheck").onchange = (e) => {
+    prepayChecked = e.target.checked;
+    updateConfirmButton();
+  };
   document.getElementById("confirmBtn").onclick = submitBooking;
   hideMainButton();
 }
 
 async function init() {
+  const params = new URLSearchParams(window.location.search);
+  const startTab = params.get("tab") === "bookings" ? "bookings" : "book";
+
+  tabsEl?.querySelectorAll(".tab").forEach((btn) => {
+    btn.onclick = () => setActiveTab(btn.dataset.tab);
+  });
+
   screen.innerHTML = `<div class="loading">Загрузка KRIVEN...</div>`;
   try {
     await loadCatalog();
-    renderDateScreen();
-  } catch (e) {
+    setActiveTab(startTab);
+  } catch {
     screen.innerHTML = `<div class="error-msg">Ошибка загрузки. Перезапусти Mini App.</div>`;
   }
 }

@@ -6,7 +6,7 @@ from telegram.ext import ContextTypes
 import branding
 from catalog import BEARD_STYLES, HAIRCUT_STYLES
 from config import ADMIN_CHAT_ID
-from database import create_booking, get_user_bookings
+from booking_service import calc_prepayment
 from keyboards import (
     beard_keyboard,
     calendar_keyboard,
@@ -177,6 +177,7 @@ async def booking_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         haircut = HAIRCUT_STYLES[session["haircut"]]
         beard = BEARD_STYLES[session["beard"]]
         total = haircut["price"] + beard["price"]
+        prepay = calc_prepayment(total)
         user = query.from_user
 
         ok = create_booking(
@@ -188,6 +189,8 @@ async def booking_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             haircut_key=session["haircut"],
             beard_key=session["beard"],
             total_price=total,
+            prepayment_amount=prepay,
+            prepayment_confirmed=False,
         )
 
         if not ok:
@@ -204,6 +207,8 @@ async def booking_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             haircut["name"],
             beard["name"],
             total,
+            prepay,
+            total - prepay,
         )
         await query.edit_message_text(success_text, reply_markup=main_menu_keyboard())
 

@@ -20,7 +20,7 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
                     "◈ Записаться",
                     web_app=WebAppInfo(url=url),
                 )
-            ]
+            ],
         ]
     )
 

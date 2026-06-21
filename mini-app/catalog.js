@@ -20,5 +20,9 @@ window.KRIVEN_CATALOG = {
     slotMinutes: 30,
     closedWeekdays: [6],
     daysAhead: 30,
+    prepayPercent: 50,
+    prepayMin: 300,
+    prepayPhone: "+79000000000",
+    prepayName: "KRIVEN BARBERS",
   },
 };

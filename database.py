@@ -4,6 +4,14 @@ from datetime import date, datetime
 from config import DB_PATH
 
 
+def _migrate(conn: sqlite3.Connection) -> None:
+    cols = {row[1] for row in conn.execute("PRAGMA table_info(bookings)")}
+    if "prepayment_amount" not in cols:
+        conn.execute("ALTER TABLE bookings ADD COLUMN prepayment_amount INTEGER NOT NULL DEFAULT 0")
+    if "prepayment_confirmed" not in cols:
+        conn.execute("ALTER TABLE bookings ADD COLUMN prepayment_confirmed INTEGER NOT NULL DEFAULT 0")
+
+
 def init_db() -> None:
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute(
@@ -18,11 +26,14 @@ def init_db() -> None:
                 haircut_key TEXT NOT NULL,
                 beard_key TEXT NOT NULL,
                 total_price INTEGER NOT NULL,
+                prepayment_amount INTEGER NOT NULL DEFAULT 0,
+                prepayment_confirmed INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL,
                 UNIQUE(booking_date, booking_time)
             )
             """
         )
+        _migrate(conn)
 
 
 def get_booked_times_for_date(booking_date: str) -> list[str]:
@@ -52,6 +63,8 @@ def create_booking(
     haircut_key: str,
     beard_key: str,
     total_price: int,
+    prepayment_amount: int = 0,
+    prepayment_confirmed: bool = False,
 ) -> bool:
     try:
         with sqlite3.connect(DB_PATH) as conn:
@@ -59,8 +72,9 @@ def create_booking(
                 """
                 INSERT INTO bookings (
                     user_id, username, full_name, booking_date, booking_time,
-                    haircut_key, beard_key, total_price, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    haircut_key, beard_key, total_price,
+                    prepayment_amount, prepayment_confirmed, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     user_id,
@@ -71,6 +85,8 @@ def create_booking(
                     haircut_key,
                     beard_key,
                     total_price,
+                    prepayment_amount,
+                    1 if prepayment_confirmed else 0,
                     datetime.now().isoformat(),
                 ),
             )

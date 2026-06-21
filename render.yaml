@@ -12,3 +12,7 @@ services:
         sync: false
       - key: ADMIN_CHAT_ID
         sync: false
+      - key: PREPAY_PHONE
+        sync: false
+      - key: PREPAY_NAME
+        value: KRIVEN BARBERS

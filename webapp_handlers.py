@@ -39,6 +39,7 @@ async def webapp_data_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
         booking_time=data["time"],
         haircut_key=data["haircut"],
         beard_key=data["beard"],
+        prepayment_confirmed=bool(data.get("prepayment_confirmed")),
     )
 
     await message.reply_text(text, reply_markup=main_menu_keyboard())

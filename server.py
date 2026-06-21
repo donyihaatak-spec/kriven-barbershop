@@ -5,7 +5,13 @@ from pathlib import Path
 
 from aiohttp import web
 
-from booking_service import admin_notification_text, catalog_for_webapp, get_slots_api_data, submit_booking
+from booking_service import (
+    admin_notification_text,
+    catalog_for_webapp,
+    get_my_bookings_api,
+    get_slots_api_data,
+    submit_booking,
+)
 from config import ADMIN_CHAT_ID, BOT_TOKEN
 from telegram_auth import validate_webapp_init_data
 from telegram_notify import send_telegram_message
@@ -54,6 +60,7 @@ async def handle_book(request: web.Request) -> web.Response:
         booking_time=body["time"],
         haircut_key=body["haircut"],
         beard_key=body["beard"],
+        prepayment_confirmed=bool(body.get("prepayment_confirmed")),
     )
 
     if ok and payload:
@@ -70,7 +77,22 @@ async def handle_book(request: web.Request) -> web.Response:
     return web.json_response({"ok": ok, "message": text})
 
 
-async def handle_index(_request: web.Request) -> web.FileResponse:
+async def handle_my_bookings(request: web.Request) -> web.Response:
+    try:
+        body = await request.json()
+    except json.JSONDecodeError:
+        return web.json_response({"ok": False, "error": "Неверный формат"}, status=400)
+
+    init_data = body.get("initData", "")
+    user = validate_webapp_init_data(init_data, BOT_TOKEN)
+    if not user:
+        return web.json_response({"ok": False, "error": "Открой через бота"}, status=403)
+
+    bookings = get_my_bookings_api(int(user["id"]))
+    return web.json_response({"ok": True, "bookings": bookings})
+
+
+async def handle_index(_request: web.Request) -> web.Response:
     return web.FileResponse(MINI_APP_DIR / "index.html")
 
 
@@ -80,6 +102,7 @@ def create_app() -> web.Application:
     app.router.add_get("/api/catalog", handle_catalog)
     app.router.add_get("/api/slots/{date}", handle_slots)
     app.router.add_post("/api/book", handle_book)
+    app.router.add_post("/api/my-bookings", handle_my_bookings)
     app.router.add_static("/", MINI_APP_DIR, show_index=False)
     return app
 

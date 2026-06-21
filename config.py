@@ -10,6 +10,11 @@ ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID", "")
 WEBAPP_URL = os.getenv("WEBAPP_URL", "") or os.getenv("RENDER_EXTERNAL_URL", "")
 WEBAPP_PORT = int(os.getenv("WEBAPP_PORT", "8080"))
 
+PREPAY_PERCENT = int(os.getenv("PREPAY_PERCENT", "50"))
+PREPAY_MIN = int(os.getenv("PREPAY_MIN", "300"))
+PREPAY_PHONE = os.getenv("PREPAY_PHONE", "+79000000000")
+PREPAY_NAME = os.getenv("PREPAY_NAME", "KRIVEN BARBERS")
+
 DB_PATH = Path(os.getenv("DB_PATH", str(Path(__file__).parent / "bookings.db")))
 
 # Рабочие часы барбершопа
