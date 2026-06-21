@@ -6,7 +6,7 @@ from telegram.ext import ContextTypes
 
 from booking_service import admin_notification_text, submit_booking
 from config import ADMIN_CHAT_ID
-from keyboards import main_menu_keyboard
+from keyboards import admin_payment_keyboard, main_menu_keyboard
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,6 @@ async def webapp_data_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
         booking_time=data["time"],
         haircut_key=data["haircut"],
         beard_key=data["beard"],
-        prepayment_confirmed=bool(data.get("prepayment_confirmed")),
     )
 
     await message.reply_text(text, reply_markup=main_menu_keyboard())
@@ -51,4 +50,8 @@ async def webapp_data_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
             payload,
             source="Mini App",
         )
-        await context.bot.send_message(chat_id=int(ADMIN_CHAT_ID), text=admin_text)
+        await context.bot.send_message(
+            chat_id=int(ADMIN_CHAT_ID),
+            text=admin_text,
+            reply_markup=admin_payment_keyboard(payload["booking_id"]),
+        )

@@ -3,7 +3,17 @@ from typing import Any
 
 from catalog import BEARD_STYLES, HAIRCUT_STYLES
 from config import PREPAY_MIN, PREPAY_NAME, PREPAY_PERCENT, PREPAY_PHONE
-from database import create_booking, get_booked_times_for_date, get_user_bookings
+from database import (
+    STATUS_CANCELLED,
+    STATUS_CONFIRMED,
+    STATUS_PENDING,
+    cancel_booking,
+    confirm_booking,
+    create_booking,
+    get_booked_times_for_date,
+    get_booking_by_id,
+    get_user_bookings,
+)
 from keyboards import format_date_label
 
 import branding
@@ -16,6 +26,26 @@ def calc_prepayment(total: int) -> int:
     return min(amount, total)
 
 
+def booking_payload_from_row(row: dict) -> dict[str, Any]:
+    haircut = HAIRCUT_STYLES.get(row["haircut_key"], {"name": row["haircut_key"]})
+    beard = BEARD_STYLES.get(row["beard_key"], {"name": row["beard_key"]})
+    total = row["total_price"]
+    prepay = row.get("prepayment_amount") or calc_prepayment(total)
+    return {
+        "booking_id": row["id"],
+        "user_id": row["user_id"],
+        "date_label": format_date_label(row["booking_date"]),
+        "time": row["booking_time"],
+        "haircut": haircut["name"],
+        "beard": beard["name"],
+        "total": total,
+        "prepayment": prepay,
+        "rest": max(total - prepay, 0),
+        "payment_code": row.get("payment_code") or "",
+        "status": row.get("status", STATUS_PENDING),
+    }
+
+
 def get_slots_api_data(iso_date: str) -> dict[str, Any]:
     booked = get_booked_times_for_date(iso_date)
     return {"date": iso_date, "booked": booked}
@@ -25,21 +55,19 @@ def get_my_bookings_api(user_id: int) -> list[dict[str, Any]]:
     rows = get_user_bookings(user_id)
     result = []
     for row in rows:
-        haircut = HAIRCUT_STYLES.get(row["haircut_key"], {"name": row["haircut_key"]})
-        beard = BEARD_STYLES.get(row["beard_key"], {"name": row["beard_key"]})
-        total = row["total_price"]
-        prepay = row.get("prepayment_amount") or calc_prepayment(total)
+        payload = booking_payload_from_row(row)
         result.append(
             {
                 "date": row["booking_date"],
-                "date_label": format_date_label(row["booking_date"]),
-                "time": row["booking_time"],
-                "haircut": haircut["name"],
-                "beard": beard["name"],
-                "total": total,
-                "prepayment": prepay,
-                "rest": max(total - prepay, 0),
-                "prepayment_confirmed": bool(row.get("prepayment_confirmed")),
+                "date_label": payload["date_label"],
+                "time": payload["time"],
+                "haircut": payload["haircut"],
+                "beard": payload["beard"],
+                "total": payload["total"],
+                "prepayment": payload["prepayment"],
+                "rest": payload["rest"],
+                "payment_code": payload["payment_code"],
+                "status": payload["status"],
             }
         )
     return result
@@ -53,20 +81,16 @@ def submit_booking(
     booking_time: str,
     haircut_key: str,
     beard_key: str,
-    prepayment_confirmed: bool = False,
 ) -> tuple[bool, str, dict[str, Any] | None]:
     if haircut_key not in HAIRCUT_STYLES or beard_key not in BEARD_STYLES:
         return False, "Неверные услуги", None
-
-    if not prepayment_confirmed:
-        return False, "Подтверди, что перевёл предоплату", None
 
     haircut = HAIRCUT_STYLES[haircut_key]
     beard = BEARD_STYLES[beard_key]
     total = haircut["price"] + beard["price"]
     prepay = calc_prepayment(total)
 
-    ok = create_booking(
+    booking_id = create_booking(
         user_id=user_id,
         username=username,
         full_name=full_name,
@@ -76,22 +100,18 @@ def submit_booking(
         beard_key=beard_key,
         total_price=total,
         prepayment_amount=prepay,
-        prepayment_confirmed=True,
+        status=STATUS_PENDING,
     )
 
-    if not ok:
+    if not booking_id:
         return False, branding.slot_taken(), None
 
-    payload = {
-        "date_label": format_date_label(booking_date),
-        "time": booking_time,
-        "haircut": haircut["name"],
-        "beard": beard["name"],
-        "total": total,
-        "prepayment": prepay,
-        "rest": total - prepay,
-    }
-    success = branding.booking_success(
+    row = get_booking_by_id(booking_id)
+    if not row:
+        return False, "Ошибка создания записи", None
+
+    payload = booking_payload_from_row(row)
+    message = branding.booking_pending(
         payload["date_label"],
         booking_time,
         haircut["name"],
@@ -99,8 +119,44 @@ def submit_booking(
         total,
         prepay,
         total - prepay,
+        payload["payment_code"],
+        PREPAY_PHONE,
+        PREPAY_NAME,
     )
-    return True, success, payload
+    return True, message, payload
+
+
+def admin_confirm_booking(booking_id: int) -> tuple[bool, str, dict[str, Any] | None]:
+    row = confirm_booking(booking_id)
+    if not row:
+        return False, "Запись не найдена или уже обработана", None
+    return True, "confirmed", booking_payload_from_row(row)
+
+
+def admin_cancel_booking(booking_id: int) -> tuple[bool, str, dict[str, Any] | None]:
+    row = cancel_booking(booking_id)
+    if not row:
+        return False, "Запись не найдена или уже обработана", None
+    return True, "cancelled", booking_payload_from_row(row)
+
+
+def user_confirmed_message(payload: dict[str, Any]) -> str:
+    return branding.booking_success(
+        payload["date_label"],
+        payload["time"],
+        payload["haircut"],
+        payload["beard"],
+        payload["total"],
+        payload["prepayment"],
+        payload["rest"],
+    )
+
+
+def user_cancelled_message(payload: dict[str, Any]) -> str:
+    return branding.booking_payment_rejected(
+        payload["date_label"],
+        payload["time"],
+    )
 
 
 def admin_notification_text(
@@ -111,15 +167,18 @@ def admin_notification_text(
 ) -> str:
     prepay = payload.get("prepayment", 0)
     rest = payload.get("rest", payload["total"] - prepay)
+    code = payload.get("payment_code", "—")
     return (
-        f"📋 Новая запись ({source})\n"
+        f"⏳ Ожидает оплату ({source})\n\n"
         f"👤 {full_name} (@{username or '—'})\n"
         f"📅 {payload['date_label']}, {payload['time']}\n"
         f"✂️ {payload['haircut']}\n"
         f"🧔 {payload['beard']}\n"
         f"💰 Итого: {branding.price_tag(payload['total'])}\n"
         f"✅ Предоплата: {branding.price_tag(prepay)}\n"
-        f"💵 В барбершопе: {branding.price_tag(rest)}"
+        f"💵 В барбершопе: {branding.price_tag(rest)}\n\n"
+        f"🔑 Код в комментарии: {code}\n\n"
+        "Проверь перевод в банке и нажми кнопку ниже."
     )
 
 

@@ -1,7 +1,12 @@
+import secrets
 import sqlite3
 from datetime import date, datetime
 
 from config import DB_PATH
+
+STATUS_PENDING = "pending"
+STATUS_CONFIRMED = "confirmed"
+STATUS_CANCELLED = "cancelled"
 
 
 def _migrate(conn: sqlite3.Connection) -> None:
@@ -10,6 +15,14 @@ def _migrate(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE bookings ADD COLUMN prepayment_amount INTEGER NOT NULL DEFAULT 0")
     if "prepayment_confirmed" not in cols:
         conn.execute("ALTER TABLE bookings ADD COLUMN prepayment_confirmed INTEGER NOT NULL DEFAULT 0")
+    if "status" not in cols:
+        conn.execute("ALTER TABLE bookings ADD COLUMN status TEXT NOT NULL DEFAULT 'confirmed'")
+        conn.execute(
+            "UPDATE bookings SET status = ? WHERE prepayment_confirmed = 0",
+            (STATUS_PENDING,),
+        )
+    if "payment_code" not in cols:
+        conn.execute("ALTER TABLE bookings ADD COLUMN payment_code TEXT")
 
 
 def init_db() -> None:
@@ -28,6 +41,8 @@ def init_db() -> None:
                 total_price INTEGER NOT NULL,
                 prepayment_amount INTEGER NOT NULL DEFAULT 0,
                 prepayment_confirmed INTEGER NOT NULL DEFAULT 0,
+                status TEXT NOT NULL DEFAULT 'pending',
+                payment_code TEXT,
                 created_at TEXT NOT NULL,
                 UNIQUE(booking_date, booking_time)
             )
@@ -36,11 +51,18 @@ def init_db() -> None:
         _migrate(conn)
 
 
+def generate_payment_code() -> str:
+    return f"KRV-{secrets.token_hex(2).upper()}"
+
+
 def get_booked_times_for_date(booking_date: str) -> list[str]:
     with sqlite3.connect(DB_PATH) as conn:
         rows = conn.execute(
-            "SELECT booking_time FROM bookings WHERE booking_date = ?",
-            (booking_date,),
+            """
+            SELECT booking_time FROM bookings
+            WHERE booking_date = ? AND status != ?
+            """,
+            (booking_date, STATUS_CANCELLED),
         ).fetchall()
     return [row[0] for row in rows]
 
@@ -48,8 +70,11 @@ def get_booked_times_for_date(booking_date: str) -> list[str]:
 def is_slot_taken(booking_date: str, booking_time: str) -> bool:
     with sqlite3.connect(DB_PATH) as conn:
         row = conn.execute(
-            "SELECT 1 FROM bookings WHERE booking_date = ? AND booking_time = ?",
-            (booking_date, booking_time),
+            """
+            SELECT 1 FROM bookings
+            WHERE booking_date = ? AND booking_time = ? AND status != ?
+            """,
+            (booking_date, booking_time, STATUS_CANCELLED),
         ).fetchone()
     return row is not None
 
@@ -64,17 +89,19 @@ def create_booking(
     beard_key: str,
     total_price: int,
     prepayment_amount: int = 0,
-    prepayment_confirmed: bool = False,
-) -> bool:
+    payment_code: str | None = None,
+    status: str = STATUS_PENDING,
+) -> int | None:
+    code = payment_code or generate_payment_code()
     try:
         with sqlite3.connect(DB_PATH) as conn:
-            conn.execute(
+            cur = conn.execute(
                 """
                 INSERT INTO bookings (
                     user_id, username, full_name, booking_date, booking_time,
                     haircut_key, beard_key, total_price,
-                    prepayment_amount, prepayment_confirmed, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    prepayment_amount, prepayment_confirmed, status, payment_code, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)
                 """,
                 (
                     user_id,
@@ -86,13 +113,55 @@ def create_booking(
                     beard_key,
                     total_price,
                     prepayment_amount,
-                    1 if prepayment_confirmed else 0,
+                    status,
+                    code,
                     datetime.now().isoformat(),
                 ),
             )
-        return True
+            return int(cur.lastrowid)
     except sqlite3.IntegrityError:
-        return False
+        return None
+
+
+def get_booking_by_id(booking_id: int) -> dict | None:
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        row = conn.execute("SELECT * FROM bookings WHERE id = ?", (booking_id,)).fetchone()
+    return dict(row) if row else None
+
+
+def confirm_booking(booking_id: int) -> dict | None:
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        conn.execute(
+            """
+            UPDATE bookings
+            SET status = ?, prepayment_confirmed = 1
+            WHERE id = ? AND status = ?
+            """,
+            (STATUS_CONFIRMED, booking_id, STATUS_PENDING),
+        )
+        if conn.total_changes == 0:
+            return None
+        row = conn.execute("SELECT * FROM bookings WHERE id = ?", (booking_id,)).fetchone()
+    return dict(row) if row else None
+
+
+def cancel_booking(booking_id: int) -> dict | None:
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        conn.execute(
+            """
+            UPDATE bookings
+            SET status = ?
+            WHERE id = ? AND status = ?
+            """,
+            (STATUS_CANCELLED, booking_id, STATUS_PENDING),
+        )
+        if conn.total_changes == 0:
+            return None
+        row = conn.execute("SELECT * FROM bookings WHERE id = ?", (booking_id,)).fetchone()
+    return dict(row) if row else None
 
 
 def get_user_bookings(user_id: int) -> list[dict]:
@@ -101,9 +170,9 @@ def get_user_bookings(user_id: int) -> list[dict]:
         rows = conn.execute(
             """
             SELECT * FROM bookings
-            WHERE user_id = ? AND booking_date >= ?
+            WHERE user_id = ? AND booking_date >= ? AND status != ?
             ORDER BY booking_date, booking_time
             """,
-            (user_id, date.today().isoformat()),
+            (user_id, date.today().isoformat(), STATUS_CANCELLED),
         ).fetchall()
     return [dict(row) for row in rows]

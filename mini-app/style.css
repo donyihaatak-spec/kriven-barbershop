@@ -556,3 +556,46 @@ body {
   line-height: 1.6;
   font-size: 0.9rem;
 }
+
+.payment-code {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  letter-spacing: 0.1em;
+  margin: 12px 0;
+  padding: 12px 16px;
+  border: 1px solid var(--border-active);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+}
+
+.pending-hint {
+  margin-top: 16px;
+  font-size: 0.8rem;
+  color: var(--chrome-dim);
+  line-height: 1.5;
+}
+
+.status-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  margin-bottom: 10px;
+}
+
+.status-badge.pending {
+  border: 1px solid var(--border-active);
+  color: var(--chrome);
+}
+
+.status-badge.confirmed {
+  border: 1px solid rgba(100, 200, 100, 0.4);
+  color: #8fdf8f;
+}
+
+.booking-code {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+}

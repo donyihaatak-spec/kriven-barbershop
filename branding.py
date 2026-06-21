@@ -21,7 +21,7 @@ def welcome() -> str:
     return (
         f"◈ {SHOP_NAME}\n\n"
         "Запись на стрижку и бороду.\n"
-        "Предоплата по СБП перед записью.\n"
+        "Предоплата по СБП с уникальным кодом.\n"
         "«Мои записи» — вкладка в Mini App."
     )
 
@@ -58,6 +58,41 @@ def confirmation(
         f"🧔 {beard_name}\n"
         f"💰 {price_tag(total)}\n\n"
         "Подтвердить?"
+    )
+
+
+def booking_pending(
+    date_label: str,
+    time_label: str,
+    haircut_name: str,
+    beard_name: str,
+    total: int,
+    prepayment: int,
+    rest: int,
+    payment_code: str,
+    phone: str,
+    recipient: str,
+) -> str:
+    return (
+        "⏳ Запись ожидает подтверждения оплаты\n\n"
+        f"📅 {date_label}, {time_label}\n"
+        f"✂️ {haircut_name}\n"
+        f"🧔 {beard_name}\n"
+        f"💰 Итого: {price_tag(total)}\n\n"
+        f"Переведи {price_tag(prepayment)} по СБП:\n"
+        f"📱 {phone}\n"
+        f"👤 {recipient}\n"
+        f"🔑 Комментарий: {payment_code}\n\n"
+        f"Остаток в барбершопе: {price_tag(rest)}\n\n"
+        "Подтвердим запись после проверки перевода."
+    )
+
+
+def booking_payment_rejected(date_label: str, time_label: str) -> str:
+    return (
+        "❌ Запись отменена\n\n"
+        f"📅 {date_label}, {time_label}\n\n"
+        "Оплата не подтверждена. Запишись заново, если нужно."
     )
 
 

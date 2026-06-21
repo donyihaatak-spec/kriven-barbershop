@@ -9,7 +9,7 @@ from telegram.request import HTTPXRequest
 
 from config import ADMIN_CHAT_ID, BOT_TOKEN, WEBAPP_URL
 from database import init_db
-from handlers import booking_callback, menu_callback, price_command, start_command
+from handlers import booking_callback, menu_callback, payment_callback, price_command, start_command
 from server import create_app
 from webapp_handlers import webapp_data_handler
 
@@ -39,6 +39,7 @@ def build_ptb_app() -> Application:
     app.add_handler(CommandHandler("price", price_command))
     app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, webapp_data_handler))
     app.add_handler(CallbackQueryHandler(menu_callback, pattern=r"^menu:"))
+    app.add_handler(CallbackQueryHandler(payment_callback, pattern=r"^pay:"))
     app.add_handler(CallbackQueryHandler(booking_callback))
     return app
 

@@ -18,7 +18,6 @@ let calYear = new Date().getFullYear();
 let calMonth = new Date().getMonth();
 let bookedTimes = [];
 let activeTab = "book";
-let prepayChecked = false;
 
 const booking = {
   date: null,
@@ -121,17 +120,12 @@ async function submitBooking() {
     tg?.showAlert?.("Заполни все поля");
     return;
   }
-  if (!prepayChecked) {
-    tg?.showAlert?.("Подтверди, что перевёл предоплату");
-    return;
-  }
 
   const payload = {
     date: booking.date,
     time: booking.time,
     haircut: booking.haircut,
     beard: booking.beard,
-    prepayment_confirmed: true,
   };
 
   const btn = document.getElementById("confirmBtn");
@@ -150,8 +144,7 @@ async function submitBooking() {
       if (result.ok) {
         tg?.MainButton?.hideProgress?.();
         hideMainButton();
-        renderSuccessScreen(result.message);
-        setTimeout(() => tg?.close?.(), 2500);
+        renderPendingScreen(result.message, result.payment_code);
         return;
       }
 
@@ -177,14 +170,16 @@ async function submitBooking() {
   }
 }
 
-function renderSuccessScreen(message) {
+function renderPendingScreen(message, paymentCode) {
   step = 4;
   updateProgress();
   screen.innerHTML = `
     <div class="success-screen">
-      <div class="success-icon">◈</div>
-      <div class="success-title">Готово!</div>
+      <div class="success-icon">⏳</div>
+      <div class="success-title">Ожидает оплаты</div>
+      ${paymentCode ? `<div class="payment-code">${paymentCode}</div>` : ""}
       <div class="success-text" id="successMsg"></div>
+      <p class="pending-hint">После перевода админ проверит оплату и подтвердит запись. Статус — во вкладке «Мои записи».</p>
     </div>
   `;
   const msgEl = document.getElementById("successMsg");
@@ -233,8 +228,16 @@ async function renderMyBookingsScreen() {
     screen.innerHTML = `
       <div class="screen-title">Мои записи</div>
       <div class="bookings-list">
-        ${data.bookings.map((b) => `
+        ${data.bookings.map((b) => {
+          const statusLabel = b.status === "confirmed"
+            ? '<span class="status-badge confirmed">✅ Подтверждена</span>'
+            : '<span class="status-badge pending">⏳ Ждёт оплату</span>';
+          const codeLine = b.status === "pending" && b.payment_code
+            ? `<div class="booking-code">Код: ${b.payment_code}</div>`
+            : "";
+          return `
           <div class="booking-card">
+            ${statusLabel}
             <div class="booking-date">${b.date_label}</div>
             <div class="booking-time">${b.time}</div>
             <div class="booking-services">${b.haircut} · ${b.beard}</div>
@@ -242,9 +245,10 @@ async function renderMyBookingsScreen() {
               <span>Итого ${formatPrice(b.total)}</span>
               <span class="prepay-badge">Предоплата ${formatPrice(b.prepayment)}</span>
             </div>
+            ${codeLine}
             <div class="booking-rest">Остаток в барбершопе: ${formatPrice(b.rest)}</div>
           </div>
-        `).join("")}
+        `}).join("")}
       </div>
     `;
   } catch {
@@ -442,15 +446,9 @@ function renderBeardScreen() {
   });
 }
 
-function updateConfirmButton() {
-  const btn = document.getElementById("confirmBtn");
-  if (btn) btn.disabled = !prepayChecked;
-}
-
 function renderConfirmScreen() {
   step = 4;
   updateProgress();
-  prepayChecked = false;
 
   const hair = catalog.haircuts[booking.haircut];
   const beard = catalog.beards[booking.beard];
@@ -477,23 +475,15 @@ function renderConfirmScreen() {
       <div class="prepay-title">Предоплата ${percent}%</div>
       <div class="prepay-amount">${formatPrice(prepay)}</div>
       <div class="prepay-rest">Остаток в барбершопе: ${formatPrice(rest)}</div>
-      <div class="prepay-hint">Переведи по СБП:</div>
+      <div class="prepay-hint">После брони получишь код для перевода по СБП:</div>
       <div class="prepay-phone">${cfg.prepayPhone || "+79000000000"}</div>
       <div class="prepay-name">${cfg.prepayName || "KRIVEN BARBERS"}</div>
-      <div class="prepay-comment">В комментарии: ${formatDateLabel(booking.date)} ${booking.time}</div>
+      <div class="prepay-comment">Код нужно указать в комментарии к переводу</div>
     </div>
-    <label class="prepay-check">
-      <input type="checkbox" id="prepayCheck" />
-      <span>Подтверждаю, что перевёл предоплату</span>
-    </label>
-    <button type="button" class="confirm-btn" id="confirmBtn" disabled>Записаться</button>
+    <button type="button" class="confirm-btn" id="confirmBtn">Забронировать</button>
   `;
 
   document.getElementById("backBtn").onclick = renderBeardScreen;
-  document.getElementById("prepayCheck").onchange = (e) => {
-    prepayChecked = e.target.checked;
-    updateConfirmButton();
-  };
   document.getElementById("confirmBtn").onclick = submitBooking;
   hideMainButton();
 }

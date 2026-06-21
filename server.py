@@ -13,6 +13,7 @@ from booking_service import (
     submit_booking,
 )
 from config import ADMIN_CHAT_ID, BOT_TOKEN
+from keyboards import admin_payment_keyboard_api
 from telegram_auth import validate_webapp_init_data
 from telegram_notify import send_telegram_message
 
@@ -60,7 +61,6 @@ async def handle_book(request: web.Request) -> web.Response:
         booking_time=body["time"],
         haircut_key=body["haircut"],
         beard_key=body["beard"],
-        prepayment_confirmed=bool(body.get("prepayment_confirmed")),
     )
 
     if ok and payload:
@@ -72,9 +72,18 @@ async def handle_book(request: web.Request) -> web.Response:
                 payload,
                 source="Mini App",
             )
-            await send_telegram_message(ADMIN_CHAT_ID, admin_text)
+            await send_telegram_message(
+                ADMIN_CHAT_ID,
+                admin_text,
+                reply_markup=admin_payment_keyboard_api(payload["booking_id"]),
+            )
 
-    return web.json_response({"ok": ok, "message": text})
+    return web.json_response({
+        "ok": ok,
+        "message": text,
+        "pending": ok,
+        "payment_code": payload.get("payment_code") if payload else None,
+    })
 
 
 async def handle_my_bookings(request: web.Request) -> web.Response:

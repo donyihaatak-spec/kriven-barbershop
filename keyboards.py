@@ -25,6 +25,34 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
     )
 
 
+def admin_payment_keyboard(booking_id: int) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton(
+                    "✅ Оплата получена",
+                    callback_data=f"pay:confirm:{booking_id}",
+                ),
+                InlineKeyboardButton(
+                    "❌ Отменить",
+                    callback_data=f"pay:cancel:{booking_id}",
+                ),
+            ]
+        ]
+    )
+
+
+def admin_payment_keyboard_api(booking_id: int) -> dict:
+    return {
+        "inline_keyboard": [
+            [
+                {"text": "✅ Оплата получена", "callback_data": f"pay:confirm:{booking_id}"},
+                {"text": "❌ Отменить", "callback_data": f"pay:cancel:{booking_id}"},
+            ]
+        ]
+    }
+
+
 def _date_in_range(day: date, today: date, max_date: date) -> bool:
     if day < today or day > max_date:
         return False
