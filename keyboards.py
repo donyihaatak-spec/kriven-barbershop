@@ -3,20 +3,22 @@ from datetime import date, datetime, timedelta
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 
+import config
 from catalog import BEARD_STYLES, HAIRCUT_STYLES, MONTH_NAMES, WEEKDAY_SHORT
-from config import BOOKING_DAYS_AHEAD, CLOSED_WEEKDAYS, SLOT_MINUTES, WEBAPP_URL, WORK_END_HOUR, WORK_START_HOUR
+from config import BOOKING_DAYS_AHEAD, CLOSED_WEEKDAYS, SLOT_MINUTES, WORK_END_HOUR, WORK_START_HOUR
 from database import is_slot_taken
 
 
 def main_menu_keyboard() -> InlineKeyboardMarkup:
-    if not WEBAPP_URL:
+    url = config.WEBAPP_URL
+    if not url:
         return InlineKeyboardMarkup([])
     return InlineKeyboardMarkup(
         [
             [
                 InlineKeyboardButton(
                     "◈ Записаться",
-                    web_app=WebAppInfo(url=WEBAPP_URL),
+                    web_app=WebAppInfo(url=url),
                 )
             ]
         ]
