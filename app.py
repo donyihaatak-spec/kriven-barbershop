@@ -47,9 +47,13 @@ def build_ptb_app() -> Application:
 async def webhook_handler(request: web.Request) -> web.Response:
     if not ptb_app:
         return web.Response(status=503, text="bot not ready")
-    data = await request.json()
-    update = Update.de_json(data, ptb_app.bot)
-    await ptb_app.process_update(update)
+    try:
+        data = await request.json()
+        update = Update.de_json(data, ptb_app.bot)
+        await ptb_app.process_update(update)
+    except Exception:
+        logger.exception("Webhook update failed")
+        return web.Response(status=500, text="error")
     return web.Response(text="ok")
 
 

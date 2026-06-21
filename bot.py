@@ -6,6 +6,7 @@ from telegram import MenuButtonWebApp, WebAppInfo
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, MessageHandler, filters
 from telegram.request import HTTPXRequest
 
+from bot_runtime import abort_if_render_webhook_active
 from config import BOT_TOKEN, WEBAPP_URL
 from database import init_db
 from handlers import booking_callback, menu_callback, payment_callback, price_command, start_command
@@ -19,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 async def post_init(application: Application) -> None:
+    await abort_if_render_webhook_active(application.bot)
     if WEBAPP_URL:
         await application.bot.set_chat_menu_button(
             menu_button=MenuButtonWebApp(
