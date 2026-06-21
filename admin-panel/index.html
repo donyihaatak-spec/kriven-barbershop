@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KRIVEN Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/admin/assets/style.css" />
+</head>
+<body>
+  <div class="chrome-glow"></div>
+
+  <div id="loginScreen" class="screen hidden">
+    <div class="login-card">
+      <div class="logo">◈ KRIVEN</div>
+      <div class="subtitle">ADMIN</div>
+      <p class="hint">Вход для владельца барбершопа</p>
+      <input type="password" id="passwordInput" placeholder="Пароль" autocomplete="current-password" />
+      <button type="button" id="loginBtn">Войти</button>
+      <p class="error" id="loginError"></p>
+    </div>
+  </div>
+
+  <div id="appScreen" class="screen hidden">
+    <header class="header">
+      <div>
+        <div class="logo">◈ KRIVEN</div>
+        <div class="subtitle">ADMIN PANEL</div>
+      </div>
+      <button type="button" class="ghost-btn" id="logoutBtn">Выйти</button>
+    </header>
+
+    <div class="stats" id="stats"></div>
+
+    <div class="filters">
+      <button type="button" class="filter active" data-filter="pending">Ожидают оплату</button>
+      <button type="button" class="filter" data-filter="today">Сегодня</button>
+      <button type="button" class="filter" data-filter="upcoming">Предстоящие</button>
+      <button type="button" class="filter" data-filter="all">Все</button>
+    </div>
+
+    <div id="bookings" class="bookings"></div>
+  </div>
+
+  <script src="/admin/assets/app.js"></script>
+</body>
+</html>

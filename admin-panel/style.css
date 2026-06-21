@@ -1,0 +1,252 @@
+:root {
+  --bg: #050505;
+  --bg-card: #111111;
+  --chrome: #e8e8e8;
+  --chrome-dim: #8a8a8a;
+  --border: rgba(255, 255, 255, 0.12);
+  --border-active: rgba(255, 255, 255, 0.45);
+  --danger: #ff4d4d;
+  --success: #8fdf8f;
+  --radius: 14px;
+  --font-display: "Unbounded", sans-serif;
+  --font-body: "Manrope", sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--chrome);
+  min-height: 100vh;
+}
+
+.hidden { display: none !important; }
+
+.chrome-glow {
+  position: fixed;
+  top: -120px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 420px;
+  height: 420px;
+  background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.screen {
+  position: relative;
+  z-index: 1;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.login-card {
+  max-width: 380px;
+  margin: 80px auto 0;
+  padding: 32px 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-align: center;
+}
+
+.logo {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.subtitle {
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  letter-spacing: 0.5em;
+  color: var(--chrome-dim);
+  margin-top: 6px;
+}
+
+.hint {
+  color: var(--chrome-dim);
+  font-size: 0.9rem;
+  margin: 20px 0 16px;
+}
+
+input {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: #0a0a0a;
+  color: var(--chrome);
+  font-size: 1rem;
+  margin-bottom: 12px;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  font-family: var(--font-body);
+  font-weight: 600;
+}
+
+#loginBtn {
+  width: 100%;
+  padding: 14px;
+  border-radius: var(--radius);
+  background: var(--chrome);
+  color: var(--bg);
+}
+
+.error {
+  color: var(--danger);
+  font-size: 0.85rem;
+  margin-top: 12px;
+  min-height: 1.2em;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.ghost-btn {
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--chrome-dim);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  padding: 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+}
+
+.stat-value {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+}
+
+.stat-label {
+  color: var(--chrome-dim);
+  font-size: 0.8rem;
+  margin-top: 4px;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.filter {
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--chrome-dim);
+  font-size: 0.85rem;
+}
+
+.filter.active {
+  background: var(--chrome);
+  color: var(--bg);
+  border-color: var(--chrome);
+}
+
+.bookings {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card {
+  padding: 18px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+}
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  border: 1px solid var(--border);
+}
+
+.badge.pending { color: var(--chrome); }
+.badge.confirmed { color: var(--success); border-color: rgba(143,223,143,0.4); }
+.badge.cancelled { color: var(--danger); border-color: rgba(255,77,77,0.4); }
+
+.client {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.meta, .services, .money {
+  color: var(--chrome-dim);
+  font-size: 0.85rem;
+  margin-top: 6px;
+}
+
+.code {
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+  margin-top: 8px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.btn-ok, .btn-no {
+  flex: 1;
+  padding: 12px;
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+}
+
+.btn-ok {
+  background: var(--chrome);
+  color: var(--bg);
+}
+
+.btn-no {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid rgba(255,77,77,0.4);
+}
+
+.empty {
+  text-align: center;
+  color: var(--chrome-dim);
+  padding: 40px 16px;
+}
+
+@media (max-width: 600px) {
+  .actions { flex-direction: column; }
+}

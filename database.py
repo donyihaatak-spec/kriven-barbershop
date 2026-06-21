@@ -176,3 +176,61 @@ def get_user_bookings(user_id: int) -> list[dict]:
             (user_id, date.today().isoformat(), STATUS_CANCELLED),
         ).fetchall()
     return [dict(row) for row in rows]
+
+
+def get_admin_bookings(status: str | None = None, booking_date: str | None = None) -> list[dict]:
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        query = "SELECT * FROM bookings WHERE 1=1"
+        params: list = []
+
+        if status and status != "all":
+            query += " AND status = ?"
+            params.append(status)
+        elif status != "all":
+            query += " AND status != ?"
+            params.append(STATUS_CANCELLED)
+
+        if booking_date:
+            query += " AND booking_date = ?"
+            params.append(booking_date)
+
+        query += " ORDER BY booking_date DESC, booking_time DESC LIMIT 200"
+        rows = conn.execute(query, params).fetchall()
+    return [dict(row) for row in rows]
+
+
+def get_admin_stats() -> dict:
+    today = date.today().isoformat()
+    with sqlite3.connect(DB_PATH) as conn:
+        pending = conn.execute(
+            "SELECT COUNT(*) FROM bookings WHERE status = ?",
+            (STATUS_PENDING,),
+        ).fetchone()[0]
+        today_total = conn.execute(
+            """
+            SELECT COUNT(*) FROM bookings
+            WHERE booking_date = ? AND status != ?
+            """,
+            (today, STATUS_CANCELLED),
+        ).fetchone()[0]
+        today_confirmed = conn.execute(
+            """
+            SELECT COUNT(*) FROM bookings
+            WHERE booking_date = ? AND status = ?
+            """,
+            (today, STATUS_CONFIRMED),
+        ).fetchone()[0]
+        upcoming = conn.execute(
+            """
+            SELECT COUNT(*) FROM bookings
+            WHERE booking_date >= ? AND status = ?
+            """,
+            (today, STATUS_CONFIRMED),
+        ).fetchone()[0]
+    return {
+        "pending": pending,
+        "today_total": today_total,
+        "today_confirmed": today_confirmed,
+        "upcoming_confirmed": upcoming,
+    }

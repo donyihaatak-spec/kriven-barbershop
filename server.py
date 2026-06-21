@@ -5,6 +5,7 @@ from pathlib import Path
 
 from aiohttp import web
 
+from admin_routes import register_admin_routes
 from booking_service import (
     admin_notification_text,
     catalog_for_webapp,
@@ -108,6 +109,7 @@ async def handle_index(_request: web.Request) -> web.Response:
 def create_app() -> web.Application:
     app = web.Application()
     app.router.add_get("/", handle_index)
+    register_admin_routes(app)
     app.router.add_get("/api/catalog", handle_catalog)
     app.router.add_get("/api/slots/{date}", handle_slots)
     app.router.add_post("/api/book", handle_book)

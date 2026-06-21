@@ -14,8 +14,13 @@ PREPAY_PERCENT = int(os.getenv("PREPAY_PERCENT", "50"))
 PREPAY_MIN = int(os.getenv("PREPAY_MIN", "300"))
 PREPAY_PHONE = os.getenv("PREPAY_PHONE", "+79000000000")
 PREPAY_NAME = os.getenv("PREPAY_NAME", "KRIVEN BARBERS")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 
 DB_PATH = Path(os.getenv("DB_PATH", str(Path(__file__).parent / "bookings.db")))
+
+
+def public_webapp_url() -> str:
+    return WEBAPP_URL.rstrip("/") if WEBAPP_URL else ""
 
 # Рабочие часы барбершопа
 WORK_START_HOUR = 10

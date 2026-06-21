@@ -16,3 +16,5 @@ services:
         sync: false
       - key: PREPAY_NAME
         value: KRIVEN BARBERS
+      - key: ADMIN_PASSWORD
+        sync: false

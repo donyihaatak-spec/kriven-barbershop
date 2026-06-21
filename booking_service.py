@@ -1,6 +1,8 @@
 import json
 from typing import Any
 
+from datetime import date
+
 from catalog import BEARD_STYLES, HAIRCUT_STYLES
 from config import PREPAY_MIN, PREPAY_NAME, PREPAY_PERCENT, PREPAY_PHONE
 from database import (
@@ -10,6 +12,8 @@ from database import (
     cancel_booking,
     confirm_booking,
     create_booking,
+    get_admin_bookings,
+    get_admin_stats,
     get_booked_times_for_date,
     get_booking_by_id,
     get_user_bookings,
@@ -157,6 +161,36 @@ def user_cancelled_message(payload: dict[str, Any]) -> str:
         payload["date_label"],
         payload["time"],
     )
+
+
+def format_admin_booking(row: dict) -> dict[str, Any]:
+    payload = booking_payload_from_row(row)
+    payload["username"] = row.get("username")
+    payload["full_name"] = row.get("full_name") or "—"
+    payload["created_at"] = row.get("created_at", "")
+    return payload
+
+
+def get_admin_dashboard_api(filter_name: str = "pending") -> dict[str, Any]:
+    stats = get_admin_stats()
+    today = date.today().isoformat()
+
+    if filter_name == "pending":
+        rows = get_admin_bookings(status=STATUS_PENDING)
+    elif filter_name == "today":
+        rows = get_admin_bookings(booking_date=today)
+    elif filter_name == "upcoming":
+        rows = [
+            row for row in get_admin_bookings(status=STATUS_CONFIRMED)
+            if row["booking_date"] >= today
+        ]
+    else:
+        rows = get_admin_bookings(status="all")
+
+    return {
+        "stats": stats,
+        "bookings": [format_admin_booking(row) for row in rows],
+    }
 
 
 def admin_notification_text(
