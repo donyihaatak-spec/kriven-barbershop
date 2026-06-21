@@ -1,17 +1,24 @@
-# KRIVEN Barbershop
+# kriven barbershop bot
 
-Telegram-бот и Mini App для записи в барбершоп.
+бот для записи в барbershop + mini app в телеге
 
-## Деплой на Render (бесплатно)
+---
 
-1. Подключи этот репозиторий на [render.com](https://render.com) → **New** → **Blueprint**
-2. Добавь переменные: `BOT_TOKEN`, `ADMIN_CHAT_ID`
-3. Deploy — получишь постоянную ссылку `https://xxx.onrender.com`
+**залить на render (бесплатный хост):**
 
-## Локально
+1. render.com → new → blueprint → этот репо
+2. в env добавить BOT_TOKEN и ADMIN_CHAT_ID
+3. жать deploy, дать минут 5
 
-```bash
-pip install -r requirements.txt
-# создай .env с BOT_TOKEN и ADMIN_CHAT_ID
-python run.py
+ссылка будет типа `https://kriven-barbershop.onrender.com`
+
+---
+
+**если с компа гонять:**
+
 ```
+pip install -r requirements.txt
+```
+
+рядом .env файл (смотри .env.example)  
+потом `python run.py` — но на render проще, с компа не надо держать
