@@ -8,7 +8,6 @@ const PAGES = {
   bookings: { title: "Бронирования", crumb: "Главная / Бронирования" },
   clients: { title: "Клиенты", crumb: "Главная / Клиенты" },
   services: { title: "Услуги", crumb: "Главная / Услуги" },
-  barbers: { title: "Барберы", crumb: "Главная / Барберы" },
   reviews: { title: "Отзывы", crumb: "Главная / Отзывы" },
   gallery: { title: "Галерея", crumb: "Главная / Галерея" },
   settings: { title: "Настройки", crumb: "Главная / Настройки" },
@@ -114,7 +113,7 @@ function updateNotifyBadge(pending) {
 
 function bookingRow(b, withActions = true) {
   const contact = b.username ? `@${b.username}` : "Telegram";
-  const service = `${b.haircut} + ${b.beard}`;
+  const service = b.service || `${b.haircut}`;
   const actions = withActions && b.status === "pending"
     ? `<div class="action-cell">
         <button type="button" class="btn-confirm" data-action="confirm" data-id="${b.booking_id}">Подтвердить</button>
@@ -128,7 +127,6 @@ function bookingRow(b, withActions = true) {
       <td class="client-cell"><div class="name">${b.full_name}</div>${b.payment_code ? `<div class="sub">${b.payment_code}</div>` : ""}</td>
       <td>${contact}</td>
       <td>${service}</td>
-      <td>KRIVEN</td>
       <td>${b.date_label}, ${b.time}</td>
       <td><span class="status-pill ${b.status}">${statusLabel(b.status)}</span></td>
       ${withActions ? `<td>${actions}</td>` : ""}
@@ -146,7 +144,6 @@ async function loadPage(page) {
     else if (page === "bookings") await renderBookings();
     else if (page === "clients") await renderClients();
     else if (page === "services") await renderServices();
-    else if (page === "barbers") await renderBarbers();
     else if (page === "reviews") await renderReviews();
     else if (page === "gallery") await renderGallery();
     else if (page === "settings") await renderSettings();
@@ -164,7 +161,7 @@ async function renderDashboard() {
 
   const rows = data.recent.length
     ? data.recent.map((b) => bookingRow(b, false)).join("")
-    : `<tr class="empty-row"><td colspan="7">Записей нет</td></tr>`;
+    : `<tr class="empty-row"><td colspan="6">Записей нет</td></tr>`;
 
   appScreen.innerHTML = pageHead(PAGES.dashboard.title, PAGES.dashboard.crumb)
     + renderStatsRow(data.stats)
@@ -179,7 +176,7 @@ async function renderDashboard() {
       <div class="panel-head"><h2 class="panel-title">Последние записи</h2></div>
       <div class="table-wrap">
         <table class="data-table">
-          <thead><tr><th>ID</th><th>Клиент</th><th>Контакт</th><th>Услуга</th><th>Барбер</th><th>Дата</th><th>Статус</th></tr></thead>
+          <thead><tr><th>ID</th><th>Клиент</th><th>Контакт</th><th>Услуга</th><th>Дата</th><th>Статус</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
@@ -193,7 +190,7 @@ async function renderBookings() {
 
   const rows = data.bookings.length
     ? data.bookings.map((b) => bookingRow(b)).join("")
-    : `<tr class="empty-row"><td colspan="8">Записей нет</td></tr>`;
+    : `<tr class="empty-row"><td colspan="7">Записей нет</td></tr>`;
 
   appScreen.innerHTML = pageHead(PAGES.bookings.title, PAGES.bookings.crumb)
     + renderStatsRow(data.stats)
@@ -210,7 +207,7 @@ async function renderBookings() {
       </div>
       <div class="table-wrap">
         <table class="data-table">
-          <thead><tr><th>ID</th><th>Клиент</th><th>Контакт</th><th>Услуга</th><th>Барбер</th><th>Дата и время</th><th>Статус</th><th>Действия</th></tr></thead>
+          <thead><tr><th>ID</th><th>Клиент</th><th>Контакт</th><th>Услуга</th><th>Дата и время</th><th>Статус</th><th>Действия</th></tr></thead>
           <tbody id="bookingsBody">${rows}</tbody>
         </table>
       </div>
@@ -363,73 +360,6 @@ async function renderServices() {
     </div>`;
 
   bindServiceForms();
-}
-
-async function renderBarbers() {
-  const { data } = await api("/api/admin/barbers");
-  if (!data.ok) throw new Error();
-
-  const rows = data.barbers.map((b) => {
-    const inactive = b.active ? "" : " class=\"row-inactive\"";
-    return `<tr${inactive}>
-      <td><input type="text" class="svc-input barber-name" value="${escAttr(b.name)}" required /></td>
-      <td><input type="text" class="svc-input barber-role" value="${escAttr(b.role)}" /></td>
-      <td><code>${escAttr(b.id)}</code></td>
-      <td><label class="svc-toggle"><input type="checkbox" class="barber-active" ${b.active ? "checked" : ""} /> ${b.active ? "Вкл" : "Выкл"}</label></td>
-      <td><button type="button" class="btn-small btn-primary" data-save-barber data-id="${escAttr(b.id)}">Сохранить</button></td>
-    </tr>`;
-  }).join("");
-
-  appScreen.innerHTML = pageHead(PAGES.barbers.title, PAGES.barbers.crumb) + `
-    <p class="hint-block">Список мастеров для админки и отчётов. Изменения сохраняются в базе.</p>
-    <div class="panel">
-      <div class="panel-head"><h2 class="panel-title">Барберы</h2></div>
-      <div class="table-wrap">
-        <table class="data-table svc-table">
-          <thead><tr><th>Имя</th><th>Роль</th><th>ID</th><th>Статус</th><th></th></tr></thead>
-          <tbody>${rows || `<tr><td colspan="5" class="empty-cell">Нет барберов</td></tr>`}</tbody>
-        </table>
-      </div>
-      <form class="admin-form barber-add-form">
-        <div class="svc-add-row barber-add-row">
-          <input type="text" name="name" placeholder="Имя" required />
-          <input type="text" name="role" placeholder="Роль" />
-          <input type="text" name="id" placeholder="ID (необяз.)" />
-          <button type="submit" class="btn-primary">Добавить</button>
-        </div>
-      </form>
-    </div>`;
-
-  document.querySelectorAll("[data-save-barber]").forEach((btn) => {
-    btn.onclick = async () => {
-      const row = btn.closest("tr");
-      const { data: res } = await api(`/api/admin/barbers/${encodeURIComponent(btn.dataset.id)}`, {
-        method: "PUT",
-        body: JSON.stringify({
-          name: row.querySelector(".barber-name")?.value.trim(),
-          role: row.querySelector(".barber-role")?.value.trim(),
-          active: row.querySelector(".barber-active")?.checked ?? true,
-        }),
-      });
-      if (res.ok) { showToast("Барбер сохранён"); renderBarbers(); }
-      else showToast(res.error || "Ошибка");
-    };
-  });
-
-  document.querySelector(".barber-add-form").onsubmit = async (e) => {
-    e.preventDefault();
-    const fd = new FormData(e.target);
-    const { data: res } = await api("/api/admin/barbers", {
-      method: "POST",
-      body: JSON.stringify({
-        name: String(fd.get("name") || "").trim(),
-        role: String(fd.get("role") || "").trim(),
-        id: String(fd.get("id") || "").trim() || undefined,
-      }),
-    });
-    if (res.ok) { showToast("Барбер добавлен"); renderBarbers(); }
-    else showToast(res.error || "Ошибка");
-  };
 }
 
 async function renderReviews() {

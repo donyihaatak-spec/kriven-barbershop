@@ -333,6 +333,41 @@ body.demo-mode .logo-mark {
   color: var(--accent);
 }
 
+.type-choice-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.type-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 120px;
+  padding: 20px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.type-choice:active {
+  transform: scale(0.98);
+}
+
+.type-icon {
+  font-size: 2rem;
+}
+
+.type-label {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
 .summary {
   border: 1px solid var(--border);
   border-radius: var(--radius);

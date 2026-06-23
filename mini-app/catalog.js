@@ -1,5 +1,6 @@
 window.KRIVEN_CATALOG = {
   haircuts: {
+    none: { name: "—", price: 0, emoji: "—" },
     classic: { name: "Классика", price: 800, emoji: "✂️" },
     fade: { name: "Фейд", price: 1000, emoji: "⚡" },
     crop: { name: "Кроп", price: 900, emoji: "🔥" },

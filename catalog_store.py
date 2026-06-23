@@ -11,6 +11,8 @@ import sqlite3
 
 _cache: dict[str, dict[str, dict] | None] = {"haircut": None, "beard": None}
 
+NONE_SERVICE_KEY = "none"
+
 
 def _slugify(name: str) -> str:
     text = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode("ascii")
@@ -46,12 +48,13 @@ def seed_catalog_defaults(conn: sqlite3.Connection) -> None:
         return
     order = 0
     for key, item in DEFAULT_HAIRCUTS.items():
+        active = 0 if key == "none" else 1
         conn.execute(
             """
             INSERT INTO catalog_services (kind, service_key, name, price, emoji, active, sort_order)
-            VALUES ('haircut', ?, ?, ?, ?, 1, ?)
+            VALUES ('haircut', ?, ?, ?, ?, ?, ?)
             """,
-            (key, item["name"], item["price"], item.get("emoji", ""), order),
+            (key, item["name"], item["price"], item.get("emoji", ""), active, order),
         )
         order += 1
     order = 0
@@ -64,6 +67,16 @@ def seed_catalog_defaults(conn: sqlite3.Connection) -> None:
             (key, item["name"], item["price"], item.get("emoji", ""), order),
         )
         order += 1
+
+
+def ensure_placeholder_services(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        INSERT OR IGNORE INTO catalog_services
+        (kind, service_key, name, price, emoji, active, sort_order)
+        VALUES ('haircut', 'none', '—', 0, '', 0, -1)
+        """
+    )
 
 
 def _rows_to_dict(rows: list) -> dict[str, dict]:
@@ -99,6 +112,7 @@ def get_services(kind: str, active_only: bool = True) -> dict[str, dict]:
 
     data = _rows_to_dict(rows)
     if active_only:
+        data = {k: v for k, v in data.items() if k != "none"}
         _cache[kind] = data
     return data
 
@@ -109,6 +123,26 @@ def get_haircut_styles() -> dict[str, dict]:
 
 def get_beard_styles() -> dict[str, dict]:
     return get_services("beard", active_only=True)
+
+
+def get_service_item(kind: str, key: str) -> dict | None:
+    if key == NONE_SERVICE_KEY:
+        return {"name": "—", "price": 0, "emoji": "", "active": False}
+    styles = get_services(kind, active_only=False)
+    return styles.get(key)
+
+
+def format_service_label(haircut_key: str, beard_key: str, haircut_name: str, beard_name: str) -> str:
+    if haircut_key != NONE_SERVICE_KEY and beard_key == NONE_SERVICE_KEY:
+        return haircut_name
+    if beard_key != NONE_SERVICE_KEY and haircut_key == NONE_SERVICE_KEY:
+        return beard_name
+    parts = []
+    if haircut_key != NONE_SERVICE_KEY:
+        parts.append(haircut_name)
+    if beard_key != NONE_SERVICE_KEY:
+        parts.append(beard_name)
+    return " + ".join(parts) if parts else haircut_name
 
 
 def get_all_services_admin(kind: str) -> list[dict]:

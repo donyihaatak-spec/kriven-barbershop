@@ -34,6 +34,10 @@ def pick_time(date_label: str) -> str:
     return f"📅 {date_label}\n\nВыбери время:"
 
 
+def pick_service_type() -> str:
+    return "Что записываем?"
+
+
 def pick_haircut() -> str:
     return "Выбери стрижку:"
 
@@ -45,18 +49,14 @@ def pick_beard() -> str:
 def confirmation(
     date_label: str,
     time_label: str,
-    haircut_name: str,
-    haircut_price: int,
-    beard_name: str,
-    beard_price: int,
+    service_name: str,
+    total_price: int,
 ) -> str:
-    total = haircut_price + beard_price
     return (
         f"Проверь запись:\n\n"
         f"📅 {date_label}, {time_label}\n"
-        f"✂️ {haircut_name}\n"
-        f"🧔 {beard_name}\n"
-        f"💰 {price_tag(total)}\n\n"
+        f"✂️ {service_name}\n"
+        f"💰 {price_tag(total_price)}\n\n"
         "Подтвердить?"
     )
 
@@ -64,8 +64,7 @@ def confirmation(
 def booking_pending(
     date_label: str,
     time_label: str,
-    haircut_name: str,
-    beard_name: str,
+    service_name: str,
     total: int,
     prepayment: int,
     rest: int,
@@ -76,7 +75,7 @@ def booking_pending(
     return (
         "Ждём оплату\n\n"
         f"{date_label}, {time_label}\n"
-        f"{haircut_name}, {beard_name}\n"
+        f"{service_name}\n"
         f"Сумма: {price_tag(total)}\n\n"
         f"Переведи {price_tag(prepayment)} на {phone}\n"
         f"Комментарий: {payment_code}\n\n"
@@ -94,8 +93,7 @@ def booking_payment_rejected(date_label: str, time_label: str) -> str:
 def booking_success(
     date_label: str,
     time_label: str,
-    haircut_name: str,
-    beard_name: str,
+    service_name: str,
     total: int,
     prepayment: int = 0,
     rest: int = 0,
@@ -104,7 +102,7 @@ def booking_success(
         "Запись подтверждена",
         "",
         f"{date_label}, {time_label}",
-        f"{haircut_name}, {beard_name}",
+        service_name,
         f"Сумма: {price_tag(total)}",
     ]
     if prepayment:

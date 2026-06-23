@@ -78,6 +78,9 @@ def init_db() -> None:
 
         init_catalog_table(conn)
         seed_catalog_defaults(conn)
+        from catalog_store import ensure_placeholder_services
+
+        ensure_placeholder_services(conn)
         init_settings_tables(conn)
         seed_settings_defaults(conn)
         _seed_gallery(conn)

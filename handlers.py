@@ -13,7 +13,13 @@ from booking_service import (
     user_cancelled_message,
     user_confirmed_message,
 )
-from catalog_store import get_beard_styles, get_haircut_styles
+from catalog_store import (
+    format_service_label,
+    get_beard_styles,
+    get_haircut_styles,
+    get_service_item,
+    NONE_SERVICE_KEY,
+)
 from settings_store import get_admin_chat_id, get_prepay_name, get_prepay_phone
 from config import public_webapp_url
 from database import create_booking, get_booking_by_id, get_user_bookings
@@ -25,6 +31,7 @@ from keyboards import (
     format_date_label,
     haircut_keyboard,
     main_menu_keyboard,
+    service_type_keyboard,
     time_slots_keyboard,
 )
 
@@ -80,13 +87,17 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         else:
             lines = ["Твои записи:", ""]
             for b in bookings:
-                haircut = get_haircut_styles().get(b["haircut_key"], {"name": b["haircut_key"]})["name"]
-                beard = get_beard_styles().get(b["beard_key"], {"name": b["beard_key"]})["name"]
+                service = format_service_label(
+                    b["haircut_key"],
+                    b["beard_key"],
+                    get_service_item("haircut", b["haircut_key"])["name"],
+                    get_service_item("beard", b["beard_key"])["name"],
+                )
                 status = b.get("status", "confirmed")
                 status_label = "⏳ ждёт оплату" if status == "pending" else "✅ подтверждена"
                 lines.append(
                     f"📅 {format_date_label(b['booking_date'])}, {b['booking_time']}\n"
-                    f"✂️ {haircut} + 🧔 {beard}\n"
+                    f"✂️ {service}\n"
                     f"💰 {branding.price_tag(b['total_price'])}\n"
                     f"{status_label}\n"
                 )
@@ -156,10 +167,34 @@ async def booking_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         return
 
     if data == "book:start":
+        await query.edit_message_text(
+            branding.pick_service_type(),
+            reply_markup=service_type_keyboard(),
+        )
+        return
+
+    if data == "book:type:haircut":
+        session["service_type"] = "haircut"
         today = date.today()
         await query.edit_message_text(
             branding.pick_date(),
             reply_markup=calendar_keyboard(today.year, today.month),
+        )
+        return
+
+    if data == "book:type:beard":
+        session["service_type"] = "beard"
+        today = date.today()
+        await query.edit_message_text(
+            branding.pick_date(),
+            reply_markup=calendar_keyboard(today.year, today.month),
+        )
+        return
+
+    if data == "book:back_type":
+        await query.edit_message_text(
+            branding.pick_service_type(),
+            reply_markup=service_type_keyboard(),
         )
         return
 
@@ -185,16 +220,19 @@ async def booking_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         _, iso_date, time_label = data.split(":", 2)
         session["date"] = iso_date
         session["time"] = time_label
-        await query.edit_message_text(branding.pick_haircut(), reply_markup=haircut_keyboard())
+        service_type = session.get("service_type")
+        if service_type == "beard":
+            await query.edit_message_text(branding.pick_beard(), reply_markup=beard_keyboard())
+        else:
+            await query.edit_message_text(branding.pick_haircut(), reply_markup=haircut_keyboard())
         return
 
     if data == "book:back_time":
         iso_date = session.get("date")
         if not iso_date:
-            today = date.today()
             await query.edit_message_text(
-                branding.pick_date(),
-                reply_markup=calendar_keyboard(today.year, today.month),
+                branding.pick_service_type(),
+                reply_markup=service_type_keyboard(),
             )
             return
         label = format_date_label(iso_date)
@@ -206,23 +244,27 @@ async def booking_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     if data.startswith("hair:"):
         session["haircut"] = data.split(":", 1)[1]
-        await query.edit_message_text(branding.pick_beard(), reply_markup=beard_keyboard())
-        return
-
-    if data == "book:back_hair":
-        await query.edit_message_text(branding.pick_haircut(), reply_markup=haircut_keyboard())
-        return
-
-    if data.startswith("beard:"):
-        session["beard"] = data.split(":", 1)[1]
+        session["beard"] = NONE_SERVICE_KEY
         haircut = get_haircut_styles()[session["haircut"]]
-        beard = get_beard_styles()[session["beard"]]
         await query.edit_message_text(
             branding.confirmation(
                 format_date_label(session["date"]),
                 session["time"],
                 haircut["name"],
                 haircut["price"],
+            ),
+            reply_markup=confirm_keyboard(),
+        )
+        return
+
+    if data.startswith("beard:"):
+        session["beard"] = data.split(":", 1)[1]
+        session["haircut"] = NONE_SERVICE_KEY
+        beard = get_beard_styles()[session["beard"]]
+        await query.edit_message_text(
+            branding.confirmation(
+                format_date_label(session["date"]),
+                session["time"],
                 beard["name"],
                 beard["price"],
             ),
@@ -231,7 +273,7 @@ async def booking_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         return
 
     if data == "book:confirm":
-        required = ("date", "time", "haircut", "beard")
+        required = ("date", "time", "service_type")
         if not all(session.get(k) for k in required):
             await query.edit_message_text(
                 "Сессия истекла. Начни заново.",
@@ -239,11 +281,35 @@ async def booking_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             )
             return
 
-        haircut = get_haircut_styles()[session["haircut"]]
-        beard = get_beard_styles()[session["beard"]]
-        total = haircut["price"] + beard["price"]
+        service_type = session["service_type"]
+        if service_type == "haircut":
+            session.setdefault("beard", NONE_SERVICE_KEY)
+            if not session.get("haircut"):
+                await query.edit_message_text(
+                    "Сессия истекла. Начни заново.",
+                    reply_markup=main_menu_keyboard(),
+                )
+                return
+        else:
+            session.setdefault("haircut", NONE_SERVICE_KEY)
+            if not session.get("beard"):
+                await query.edit_message_text(
+                    "Сессия истекла. Начни заново.",
+                    reply_markup=main_menu_keyboard(),
+                )
+                return
+
+        haircut_item = get_service_item("haircut", session["haircut"])
+        beard_item = get_service_item("beard", session["beard"])
+        total = haircut_item["price"] + beard_item["price"]
         prepay = calc_prepayment(total)
         user = query.from_user
+        service_name = format_service_label(
+            session["haircut"],
+            session["beard"],
+            haircut_item["name"],
+            beard_item["name"],
+        )
 
         booking_id = create_booking(
             user_id=user.id,
@@ -270,8 +336,7 @@ async def booking_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         pending_text = branding.booking_pending(
             format_date_label(session["date"]),
             session["time"],
-            haircut["name"],
-            beard["name"],
+            service_name,
             total,
             prepay,
             total - prepay,

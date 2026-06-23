@@ -3,7 +3,13 @@ from typing import Any
 
 from datetime import date
 
-from catalog_store import get_beard_styles, get_haircut_styles
+from catalog_store import (
+    format_service_label,
+    get_beard_styles,
+    get_haircut_styles,
+    get_service_item,
+    NONE_SERVICE_KEY,
+)
 from config import KWORK_URL, SALES_CONTACT_URL, SALES_MODE
 from settings_store import (
     get_booking_days_ahead,
@@ -46,10 +52,22 @@ def calc_prepayment(total: int) -> int:
 
 
 def booking_payload_from_row(row: dict) -> dict[str, Any]:
-    haircut = get_haircut_styles().get(row["haircut_key"], {"name": row["haircut_key"], "price": 0})
-    beard = get_beard_styles().get(row["beard_key"], {"name": row["beard_key"], "price": 0})
+    haircut = get_service_item("haircut", row["haircut_key"]) or {
+        "name": row["haircut_key"],
+        "price": 0,
+    }
+    beard = get_service_item("beard", row["beard_key"]) or {
+        "name": row["beard_key"],
+        "price": 0,
+    }
     total = row["total_price"]
     prepay = row.get("prepayment_amount") or calc_prepayment(total)
+    service = format_service_label(
+        row["haircut_key"],
+        row["beard_key"],
+        haircut["name"],
+        beard["name"],
+    )
     return {
         "booking_id": row["id"],
         "user_id": row["user_id"],
@@ -57,6 +75,7 @@ def booking_payload_from_row(row: dict) -> dict[str, Any]:
         "time": row["booking_time"],
         "haircut": haircut["name"],
         "beard": beard["name"],
+        "service": service,
         "total": total,
         "prepayment": prepay,
         "rest": max(total - prepay, 0),
@@ -83,6 +102,7 @@ def get_my_bookings_api(user_id: int) -> list[dict[str, Any]]:
                 "time": payload["time"],
                 "haircut": payload["haircut"],
                 "beard": payload["beard"],
+                "service": payload["service"],
                 "total": payload["total"],
                 "prepayment": payload["prepayment"],
                 "rest": payload["rest"],
@@ -132,6 +152,7 @@ def check_booking_status_api(
             "time": payload["time"],
             "haircut": payload["haircut"],
             "beard": payload["beard"],
+            "service": payload["service"],
             "total": payload["total"],
             "prepayment": payload["prepayment"],
             "rest": payload["rest"],
@@ -148,13 +169,16 @@ def submit_booking(
     haircut_key: str,
     beard_key: str,
 ) -> tuple[bool, str, dict[str, Any] | None]:
-    haircuts = get_haircut_styles()
-    beards = get_beard_styles()
-    if haircut_key not in haircuts or beard_key not in beards:
+    haircut = get_service_item("haircut", haircut_key)
+    beard = get_service_item("beard", beard_key)
+    if not haircut or not beard:
         return False, "Неверные услуги", None
 
-    haircut = haircuts[haircut_key]
-    beard = beards[beard_key]
+    has_hair = haircut_key != NONE_SERVICE_KEY
+    has_beard = beard_key != NONE_SERVICE_KEY
+    if has_hair == has_beard:
+        return False, "Выбери стрижку или бороду", None
+
     total = haircut["price"] + beard["price"]
     prepay = calc_prepayment(total)
 
@@ -182,8 +206,7 @@ def submit_booking(
     message = branding.booking_pending(
         payload["date_label"],
         booking_time,
-        haircut["name"],
-        beard["name"],
+        payload["service"],
         total,
         prepay,
         total - prepay,
@@ -212,8 +235,7 @@ def user_confirmed_message(payload: dict[str, Any]) -> str:
     return branding.booking_success(
         payload["date_label"],
         payload["time"],
-        payload["haircut"],
-        payload["beard"],
+        payload["service"],
         payload["total"],
         payload["prepayment"],
         payload["rest"],
@@ -274,8 +296,7 @@ def admin_notification_text(
         f"⏳ Ожидает оплату ({source})\n\n"
         f"👤 {full_name} (@{username or '—'})\n"
         f"📅 {payload['date_label']}, {payload['time']}\n"
-        f"✂️ {payload['haircut']}\n"
-        f"🧔 {payload['beard']}\n"
+        f"✂️ {payload['service']}\n"
         f"💰 Итого: {branding.price_tag(payload['total'])}\n"
         f"✅ Предоплата: {branding.price_tag(prepay)}\n"
         f"💵 В барбершопе: {branding.price_tag(rest)}\n\n"

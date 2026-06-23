@@ -186,13 +186,27 @@ def time_slots_keyboard(booking_date: str) -> InlineKeyboardMarkup:
             [InlineKeyboardButton("Нет свободных слотов", callback_data="cal:ignore")]
         )
 
-    rows.append([InlineKeyboardButton("◀ Назад", callback_data="book:start")])
+    rows.append([InlineKeyboardButton("◀ Назад", callback_data="book:back_type")])
     return InlineKeyboardMarkup(rows)
+
+
+def service_type_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton("✂️ Стрижка", callback_data="book:type:haircut"),
+                InlineKeyboardButton("🧔 Борода", callback_data="book:type:beard"),
+            ],
+            [InlineKeyboardButton("✕ Отмена", callback_data="book:cancel")],
+        ]
+    )
 
 
 def haircut_keyboard() -> InlineKeyboardMarkup:
     rows: list[list[InlineKeyboardButton]] = []
     for key, item in get_haircut_styles().items():
+        if key == "none":
+            continue
         rows.append(
             [
                 InlineKeyboardButton(
@@ -208,6 +222,8 @@ def haircut_keyboard() -> InlineKeyboardMarkup:
 def beard_keyboard() -> InlineKeyboardMarkup:
     rows: list[list[InlineKeyboardButton]] = []
     for key, item in get_beard_styles().items():
+        if key == "none":
+            continue
         price = "0 ₽" if item["price"] == 0 else f"{item['price']} ₽"
         rows.append(
             [
@@ -217,7 +233,7 @@ def beard_keyboard() -> InlineKeyboardMarkup:
                 )
             ]
         )
-    rows.append([InlineKeyboardButton("◀ Назад", callback_data="book:back_hair")])
+    rows.append([InlineKeyboardButton("◀ Назад", callback_data="book:back_time")])
     return InlineKeyboardMarkup(rows)
 
 

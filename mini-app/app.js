@@ -20,6 +20,7 @@ let bookedTimes = [];
 let activeTab = "book";
 
 const booking = {
+  serviceType: null,
   date: null,
   time: null,
   haircut: null,
@@ -97,7 +98,7 @@ function setActiveTab(tab) {
   });
   setProgressVisible(tab === "book");
   if (tab === "book") {
-    renderDateScreen();
+    renderServiceTypeScreen();
   } else {
     renderMyBookingsScreen();
   }
@@ -127,7 +128,20 @@ function hideMainButton() {
 }
 
 async function submitBooking() {
-  if (!booking.date || !booking.time || !booking.haircut || !booking.beard) {
+  const haircutKey = booking.serviceType === "haircut" ? booking.haircut : "none";
+  const beardKey = booking.serviceType === "beard" ? booking.beard : "none";
+  if (!booking.date || !booking.time || !booking.serviceType) {
+    alert("Заполни все поля");
+    return;
+  }
+  if (booking.serviceType === "haircut" && !booking.haircut) {
+    alert("Выбери стрижку");
+    return;
+  }
+  if (booking.serviceType === "beard" && !booking.beard) {
+    alert("Выбери услугу для бороды");
+    return;
+  }
     tg?.showAlert?.("Заполни все поля");
     return;
   }
@@ -135,8 +149,8 @@ async function submitBooking() {
   const payload = {
     date: booking.date,
     time: booking.time,
-    haircut: booking.haircut,
-    beard: booking.beard,
+    haircut: haircutKey,
+    beard: beardKey,
   };
 
   const btn = document.getElementById("confirmBtn");
@@ -212,7 +226,8 @@ function stopStatusPoll() {
 }
 
 function formatConfirmedMessage(b) {
-  let text = `${b.date_label}, ${b.time}\n${b.haircut}, ${b.beard}\nСумма: ${formatPrice(b.total)}`;
+  const service = b.service || [b.haircut, b.beard].filter((x) => x && x !== "—").join(", ");
+  let text = `${b.date_label}, ${b.time}\n${service}\nСумма: ${formatPrice(b.total)}`;
   if (b.prepayment) {
     text += `\nПредоплата: ${formatPrice(b.prepayment)}`;
     text += `\nВ салоне: ${formatPrice(b.rest)}`;
@@ -256,6 +271,7 @@ async function fetchBookingStatus({ paymentCode, bookingId }) {
       time: match.time,
       haircut: match.haircut,
       beard: match.beard,
+      service: match.service,
       total: match.total,
       prepayment: match.prepayment,
       rest: match.rest,
@@ -419,7 +435,7 @@ async function renderMyBookingsScreen() {
           <div class="booking-card ${b.status}">
             <div class="booking-status">${status}</div>
             <div class="booking-date">${b.date_label}, ${b.time}</div>
-            <div class="booking-meta">${b.haircut}, ${b.beard}</div>
+            <div class="booking-meta">${b.service || `${b.haircut}, ${b.beard}`}</div>
             <div class="booking-meta">${formatPrice(b.total)} · предоплата ${formatPrice(b.prepayment)}</div>
             ${codeLine}
             ${cancelBtn}
@@ -523,9 +539,62 @@ async function fetchBookedTimes(isoDate) {
   }
 }
 
-function renderDateScreen() {
+function renderServiceCards(items, selectedKey) {
+  return Object.entries(items).map(([key, item]) => `
+    <div class="service-card${selectedKey === key ? " selected" : ""}" data-key="${key}">
+      <span class="name">${item.name}</span>
+      <span class="price">${formatPrice(item.price)}</span>
+    </div>
+  `).join("");
+}
+
+function catalogItems(kind) {
+  const source = kind === "haircut" ? catalog.haircuts : catalog.beards;
+  return Object.fromEntries(Object.entries(source).filter(([key]) => key !== "none"));
+}
+
+function serviceLabel(haircutKey, beardKey) {
+  const hair = catalog.haircuts[haircutKey];
+  const beard = catalog.beards[beardKey];
+  if (haircutKey !== "none" && beardKey === "none") return hair?.name || haircutKey;
+  if (beardKey !== "none" && haircutKey === "none") return beard?.name || beardKey;
+  return [hair?.name, beard?.name].filter(Boolean).join(", ");
+}
+
+function renderServiceTypeScreen() {
   if (activeTab !== "book") return;
   updateProgress(0);
+  setTabsVisible(true);
+  hideMainButton();
+
+  setScreenHtml(`
+    <div class="screen-title">Запись</div>
+    <p class="screen-sub">Что тебе нужно?</p>
+    <div class="type-choice-grid">
+      <button type="button" class="type-choice" data-type="haircut">
+        <span class="type-icon">✂️</span>
+        <span class="type-label">Стрижка</span>
+      </button>
+      <button type="button" class="type-choice" data-type="beard">
+        <span class="type-icon">🧔</span>
+        <span class="type-label">Борода</span>
+      </button>
+    </div>
+  `);
+
+  screen.querySelectorAll(".type-choice").forEach((btn) => {
+    btn.onclick = () => {
+      booking.serviceType = btn.dataset.type;
+      booking.haircut = null;
+      booking.beard = null;
+      renderDateScreen();
+    };
+  });
+}
+
+function renderDateScreen() {
+  if (activeTab !== "book") return;
+  updateProgress(1);
   setTabsVisible(true);
   hideMainButton();
 
@@ -535,6 +604,7 @@ function renderDateScreen() {
   let startPad = (firstDay.getDay() + 6) % 7;
 
   let html = `
+    <button class="back-btn" id="backBtn">Назад</button>
     <div class="screen-title">Дата</div>
     <div class="calendar-nav">
       <button type="button" id="prevMonth">◀</button>
@@ -561,6 +631,7 @@ function renderDateScreen() {
   html += `</div>`;
   setScreenHtml(html);
 
+  document.getElementById("backBtn").onclick = renderServiceTypeScreen;
   document.getElementById("prevMonth").onclick = () => {
     calMonth--;
     if (calMonth < 0) { calMonth = 11; calYear--; }
@@ -581,7 +652,7 @@ function renderDateScreen() {
 }
 
 async function renderTimeScreen() {
-  updateProgress(1);
+  updateProgress(2);
   hideMainButton();
   await fetchBookedTimes(booking.date);
 
@@ -604,68 +675,56 @@ async function renderTimeScreen() {
   screen.querySelectorAll(".time-slot:not(.taken)").forEach((btn) => {
     btn.onclick = () => {
       booking.time = btn.dataset.time;
-      renderHairScreen();
+      renderServiceScreen();
     };
   });
 }
 
-function renderServiceCards(items, selectedKey) {
-  return Object.entries(items).map(([key, item]) => `
-    <div class="service-card${selectedKey === key ? " selected" : ""}" data-key="${key}">
-      <span class="name">${item.name}</span>
-      <span class="price">${formatPrice(item.price)}</span>
-    </div>
-  `).join("");
-}
-
-function renderHairScreen() {
-  updateProgress(2);
+function renderServiceScreen() {
+  const isHair = booking.serviceType === "haircut";
+  updateProgress(3);
   hideMainButton();
+  const items = catalogItems(isHair ? "haircut" : "beard");
+  const selected = isHair ? booking.haircut : booking.beard;
+  const title = isHair ? "Стрижка" : "Борода";
 
   setScreenHtml(`
     <button class="back-btn" id="backBtn">Назад</button>
-    <div class="screen-title">Стрижка</div>
-    <div class="service-list" id="hairList">
-      ${renderServiceCards(catalog.haircuts, booking.haircut)}
+    <div class="screen-title">${title}</div>
+    <div class="service-list" id="serviceList">
+      ${renderServiceCards(items, selected)}
     </div>
   `);
 
   document.getElementById("backBtn").onclick = renderTimeScreen;
-  document.querySelectorAll("#hairList .service-card").forEach((card) => {
+  document.querySelectorAll("#serviceList .service-card").forEach((card) => {
     card.onclick = () => {
-      booking.haircut = card.dataset.key;
-      renderBeardScreen();
-    };
-  });
-}
-
-function renderBeardScreen() {
-  updateProgress(3);
-  hideMainButton();
-
-  setScreenHtml(`
-    <button class="back-btn" id="backBtn">Назад</button>
-    <div class="screen-title">Борода</div>
-    <div class="service-list" id="beardList">
-      ${renderServiceCards(catalog.beards, booking.beard)}
-    </div>
-  `);
-
-  document.getElementById("backBtn").onclick = renderHairScreen;
-  document.querySelectorAll("#beardList .service-card").forEach((card) => {
-    card.onclick = () => {
-      booking.beard = card.dataset.key;
+      if (isHair) booking.haircut = card.dataset.key;
+      else booking.beard = card.dataset.key;
       renderConfirmScreen();
     };
   });
 }
 
+function renderHairScreen() {
+  booking.serviceType = "haircut";
+  renderServiceScreen();
+}
+
+function renderBeardScreen() {
+  booking.serviceType = "beard";
+  renderServiceScreen();
+}
+
 function renderConfirmScreen() {
   updateProgress(4);
   setTabsVisible(false);
-  const hair = catalog.haircuts[booking.haircut];
-  const beard = catalog.beards[booking.beard];
+  const haircutKey = booking.serviceType === "haircut" ? booking.haircut : "none";
+  const beardKey = booking.serviceType === "beard" ? booking.beard : "none";
+  const hair = catalog.haircuts[haircutKey] || { name: "—", price: 0 };
+  const beard = catalog.beards[beardKey] || { name: "—", price: 0 };
   const total = hair.price + beard.price;
+  const serviceName = serviceLabel(haircutKey, beardKey);
   const prepay = calcPrepayment(total);
   const rest = total - prepay;
   const cfg = catalog.config;
@@ -676,8 +735,7 @@ function renderConfirmScreen() {
     <div class="summary">
       <div class="summary-row"><span>Дата</span><span>${formatDateLabel(booking.date)}</span></div>
       <div class="summary-row"><span>Время</span><span>${booking.time}</span></div>
-      <div class="summary-row"><span>Стрижка</span><span>${hair.name}</span></div>
-      <div class="summary-row"><span>Борода</span><span>${beard.name}</span></div>
+      <div class="summary-row"><span>Услуга</span><span>${serviceName}</span></div>
       <div class="summary-total">
         <span>Сумма</span>
         <span>${formatPrice(total)}</span>
@@ -692,7 +750,7 @@ function renderConfirmScreen() {
     <button type="button" class="confirm-btn" id="confirmBtn">Записаться</button>
   `);
 
-  document.getElementById("backBtn").onclick = renderBeardScreen;
+  document.getElementById("backBtn").onclick = renderServiceScreen;
   document.getElementById("confirmBtn").onclick = submitBooking;
   hideMainButton();
 }
@@ -722,14 +780,13 @@ async function init() {
 
 function buildDemoPendingMessage() {
   const hair = catalog.haircuts.undercut;
-  const beard = catalog.beards.razor;
-  const total = hair.price + beard.price;
+  const total = hair.price;
   const prepay = calcPrepayment(total);
   const rest = total - prepay;
   const dateLabel = formatDateLabel("2026-06-25");
   const phone = catalog.config?.prepayPhone || "+79991234567";
   return (
-    `Ждём оплату\n\n${dateLabel}, 16:30\n${hair.name}, ${beard.name}\n` +
+    `Ждём оплату\n\n${dateLabel}, 16:30\n${hair.name}\n` +
     `Сумма: ${formatPrice(total)}\n\nПереведи ${formatPrice(prepay)} на ${phone}\n` +
     `Комментарий: KRV-E029\n\nВ салоне: ${formatPrice(rest)}`
   );
@@ -740,15 +797,15 @@ function renderDemoConfirmed() {
   setProgressVisible(false);
   setTabsVisible(true);
   const hair = catalog.haircuts.undercut;
-  const beard = catalog.beards.razor;
-  const total = hair.price + beard.price;
+  const total = hair.price;
   const prepay = calcPrepayment(total);
   const rest = total - prepay;
   const bookingData = {
     date_label: formatDateLabel("2026-06-25"),
     time: "16:30",
+    service: hair.name,
     haircut: hair.name,
-    beard: beard.name,
+    beard: "—",
     total,
     prepayment: prepay,
     rest,
@@ -771,8 +828,9 @@ function runDemoScreen(name) {
   calMonth = 5;
   booking.date = "2026-06-25";
   booking.time = "16:30";
+  booking.serviceType = "haircut";
   booking.haircut = "undercut";
-  booking.beard = "razor";
+  booking.beard = null;
 
   switch (name) {
     case "calendar":
@@ -811,7 +869,7 @@ function renderDemoBookings() {
       date_label: formatDateLabel("2026-06-25"),
       time: "16:30",
       haircut: catalog.haircuts.undercut.name,
-      beard: catalog.beards.razor.name,
+      service: catalog.haircuts.undercut.name,
       total: 2000,
       prepayment: 1000,
     },
@@ -820,7 +878,7 @@ function renderDemoBookings() {
       date_label: formatDateLabel("2026-06-28"),
       time: "12:00",
       haircut: catalog.haircuts.fade.name,
-      beard: catalog.beards.contour.name,
+      service: catalog.beards.contour.name,
       total: 1500,
       prepayment: 750,
       payment_code: "KRV-E029",
@@ -842,7 +900,7 @@ function renderDemoBookings() {
         <div class="booking-card ${b.status}">
           <div class="booking-status">${status}</div>
           <div class="booking-date">${b.date_label}, ${b.time}</div>
-          <div class="booking-meta">${b.haircut}, ${b.beard}</div>
+          <div class="booking-meta">${b.service || b.haircut}</div>
           <div class="booking-meta">${formatPrice(b.total)} · предоплата ${formatPrice(b.prepayment)}</div>
           ${codeLine}
           ${cancelBtn}
