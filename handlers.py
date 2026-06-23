@@ -1,6 +1,6 @@
 from datetime import date
 
-from telegram import Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
 import branding
@@ -54,10 +54,10 @@ async def admin_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         return
 
     await update.message.reply_text(
-        "◈ KRIVEN — админ-панель\n\n"
-        f"Открой: {url}/admin?v=6\n\n"
-        "Пароль — переменная ADMIN_PASSWORD в Render.\n"
-        "Там все записи, подтверждение оплат и расписание."
+        "Админ-панель\n\nЗаписи, оплаты, услуги и настройки.",
+        reply_markup=InlineKeyboardMarkup(
+            [[InlineKeyboardButton("Открыть", url=f"{url}/admin")]]
+        ),
     )
 
 
