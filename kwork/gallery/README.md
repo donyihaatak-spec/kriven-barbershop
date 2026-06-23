@@ -8,15 +8,15 @@
 | `02-summary.png` | Итого | `/?demo=summary` |
 | `03-payment.png` | Ждём оплату | `/?demo=payment` |
 | `04-confirmed.png` | Подтверждено | `/?demo=confirmed` |
-| `05-admin.png` | Админка | `/admin/demo` |
+| `05-admin.png` | Админка — записи | `/admin/demo` |
+| `06-services.png` | Админка — услуги | `/admin/demo-services` |
 
 ## Переснять локально
 
 ```bash
-python -m server  # или python -c "from server import run_server; run_server(8765)"
 python scripts/capture_gallery.py
 ```
 
-Или открой URL в браузере (ширина ~390px) и сделай скрин вручную.
+Или открой URL в браузере (Mini App ~390px, админка ~1100px) и сделай скрин вручную.
 
 Демо: https://t.me/kriventestbot

@@ -77,6 +77,10 @@ async def handle_admin_demo(_request: web.Request) -> web.FileResponse:
     return _no_cache(web.FileResponse(ADMIN_DIR / "demo.html"))
 
 
+async def handle_admin_demo_services(_request: web.Request) -> web.FileResponse:
+    return _no_cache(web.FileResponse(ADMIN_DIR / "demo-services.html"))
+
+
 async def handle_admin_login(request: web.Request) -> web.Response:
     if not admin_auth_enabled():
         return web.json_response(
@@ -312,6 +316,7 @@ async def handle_admin_cancel(request: web.Request) -> web.Response:
 def register_admin_routes(app: web.Application) -> None:
     app.router.add_get("/admin", handle_admin_index)
     app.router.add_get("/admin/demo", handle_admin_demo)
+    app.router.add_get("/admin/demo-services", handle_admin_demo_services)
     app.router.add_post("/api/admin/login", handle_admin_login)
     app.router.add_get("/api/admin/dashboard", handle_admin_dashboard)
     app.router.add_get("/api/admin/overview", handle_admin_overview)

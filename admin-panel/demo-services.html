@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KRIVEN Admin — услуги (demo)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/admin/assets/style.css?v=8" />
+</head>
+<body>
+  <div class="admin-layout">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <button type="button" class="sidebar-toggle">☰</button>
+        <div>
+          <div class="logo-sm">KRIVEN</div>
+          <div class="subtitle-sm">Admin</div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">Главное</div>
+        <button type="button" class="nav-item"><span class="nav-icon">▦</span><span class="nav-label">Панель управления</span></button>
+        <button type="button" class="nav-item"><span class="nav-icon">📅</span><span class="nav-label">Бронирования</span></button>
+        <button type="button" class="nav-item"><span class="nav-icon">👤</span><span class="nav-label">Клиенты</span></button>
+        <button type="button" class="nav-item active"><span class="nav-icon">✂️</span><span class="nav-label">Услуги</span></button>
+        <button type="button" class="nav-item"><span class="nav-icon">🧔</span><span class="nav-label">Барберы</span></button>
+        <div class="nav-section">Управление</div>
+        <button type="button" class="nav-item"><span class="nav-icon">⭐</span><span class="nav-label">Отзывы</span></button>
+        <button type="button" class="nav-item"><span class="nav-icon">🖼</span><span class="nav-label">Галерея</span></button>
+        <button type="button" class="nav-item"><span class="nav-icon">⚙</span><span class="nav-label">Настройки</span></button>
+      </nav>
+      <div class="sidebar-footer">KRIVEN Admin © 2026</div>
+    </aside>
+
+    <div class="main-area">
+      <header class="topbar">
+        <div class="topbar-spacer"></div>
+        <div class="user-menu">
+          <div class="user-avatar">K</div>
+          <span class="user-name">kriven_admin</span>
+        </div>
+      </header>
+
+      <main class="content">
+        <div class="page-head">
+          <h1 class="page-title">Услуги</h1>
+          <div class="breadcrumb">Главная / Услуги</div>
+        </div>
+
+        <p class="hint-block">Изменения сразу попадают в бота и Mini App.</p>
+
+        <div class="grid-2">
+          <div class="panel">
+            <div class="panel-head"><h2 class="panel-title">Стрижки</h2></div>
+            <div class="table-wrap">
+              <table class="data-table svc-table">
+                <thead><tr><th></th><th>Название</th><th>Код</th><th>Цена</th><th>Статус</th><th></th></tr></thead>
+                <tbody>
+                  <tr>
+                    <td><input class="svc-input svc-emoji" value="✂️" /></td>
+                    <td><input class="svc-input svc-name" value="Фейд" /></td>
+                    <td><code>fade</code></td>
+                    <td><input class="svc-input svc-price" value="2000" /></td>
+                    <td><label class="svc-toggle"><input type="checkbox" checked /> Вкл</label></td>
+                    <td><button class="btn-small btn-primary">Сохранить</button></td>
+                  </tr>
+                  <tr>
+                    <td><input class="svc-input svc-emoji" value="✂️" /></td>
+                    <td><input class="svc-input svc-name" value="Классика" /></td>
+                    <td><code>classic</code></td>
+                    <td><input class="svc-input svc-price" value="1500" /></td>
+                    <td><label class="svc-toggle"><input type="checkbox" checked /> Вкл</label></td>
+                    <td><button class="btn-small btn-primary">Сохранить</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h2 class="panel-title">Борода</h2></div>
+            <div class="table-wrap">
+              <table class="data-table svc-table">
+                <thead><tr><th></th><th>Название</th><th>Код</th><th>Цена</th><th>Статус</th><th></th></tr></thead>
+                <tbody>
+                  <tr>
+                    <td><input class="svc-input svc-emoji" value="🧔" /></td>
+                    <td><input class="svc-input svc-name" value="Контур" /></td>
+                    <td><code>contour</code></td>
+                    <td><input class="svc-input svc-price" value="800" /></td>
+                    <td><label class="svc-toggle"><input type="checkbox" checked /> Вкл</label></td>
+                    <td><button class="btn-small btn-primary">Сохранить</button></td>
+                  </tr>
+                  <tr>
+                    <td><input class="svc-input svc-emoji" value="🧔" /></td>
+                    <td><input class="svc-input svc-name" value="Без бороды" /></td>
+                    <td><code>none</code></td>
+                    <td><input class="svc-input svc-price" value="0" /></td>
+                    <td><label class="svc-toggle"><input type="checkbox" checked /> Вкл</label></td>
+                    <td><button class="btn-small btn-primary">Сохранить</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+</body>
+</html>
