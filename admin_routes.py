@@ -18,6 +18,13 @@ logger = logging.getLogger(__name__)
 ADMIN_DIR = Path(__file__).parent / "admin-panel"
 
 
+def _no_cache(response: web.FileResponse) -> web.FileResponse:
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
+
 def _extract_token(request: web.Request) -> str | None:
     auth = request.headers.get("Authorization", "")
     if auth.startswith("Bearer "):
@@ -34,11 +41,11 @@ def _require_admin(request: web.Request) -> None:
 
 
 async def handle_admin_index(_request: web.Request) -> web.FileResponse:
-    return web.FileResponse(ADMIN_DIR / "index.html")
+    return _no_cache(web.FileResponse(ADMIN_DIR / "index.html"))
 
 
 async def handle_admin_demo(_request: web.Request) -> web.FileResponse:
-    return web.FileResponse(ADMIN_DIR / "demo.html")
+    return _no_cache(web.FileResponse(ADMIN_DIR / "demo.html"))
 
 
 async def handle_admin_login(request: web.Request) -> web.Response:
@@ -95,4 +102,9 @@ def register_admin_routes(app: web.Application) -> None:
     app.router.add_get("/api/admin/dashboard", handle_admin_dashboard)
     app.router.add_post("/api/admin/bookings/{booking_id}/confirm", handle_admin_confirm)
     app.router.add_post("/api/admin/bookings/{booking_id}/cancel", handle_admin_cancel)
-    app.router.add_static("/admin/assets", ADMIN_DIR, show_index=False)
+    app.router.add_static(
+        "/admin/assets",
+        ADMIN_DIR,
+        show_index=False,
+        cache_max_age=0,
+    )

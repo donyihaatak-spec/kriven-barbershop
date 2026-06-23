@@ -54,7 +54,7 @@ async def admin_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     await update.message.reply_text(
         "◈ KRIVEN — админ-панель\n\n"
-        f"Открой: {url}/admin\n\n"
+        f"Открой: {url}/admin?v=5\n\n"
         "Пароль — переменная ADMIN_PASSWORD в Render.\n"
         "Там все записи, подтверждение оплат и расписание."
     )
