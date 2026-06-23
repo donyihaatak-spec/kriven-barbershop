@@ -24,7 +24,7 @@ async def post_init(application: Application) -> None:
     if WEBAPP_URL:
         await application.bot.set_chat_menu_button(
             menu_button=MenuButtonWebApp(
-                text="◈ Записаться",
+                text="Записаться",
                 web_app=WebAppInfo(url=WEBAPP_URL),
             )
         )

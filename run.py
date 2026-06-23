@@ -51,7 +51,7 @@ def main() -> None:
         await abort_if_render_webhook_active(application.bot)
         await application.bot.set_chat_menu_button(
             menu_button=MenuButtonWebApp(
-                text="◈ Записаться",
+                text="Записаться",
                 web_app=WebAppInfo(url=webapp_url),
             )
         )

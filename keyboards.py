@@ -17,31 +17,11 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
     rows: list[list[InlineKeyboardButton]] = [
         [
             InlineKeyboardButton(
-                "◈ Записаться",
+                "Записаться",
                 web_app=WebAppInfo(url=url),
             )
         ],
     ]
-
-    if config.SALES_MODE:
-        if config.SALES_CONTACT_URL:
-            rows.append(
-                [
-                    InlineKeyboardButton(
-                        "◈ Заказать для своего салона",
-                        url=config.SALES_CONTACT_URL,
-                    )
-                ]
-            )
-        if config.KWORK_URL:
-            rows.append(
-                [
-                    InlineKeyboardButton(
-                        "◈ Смотреть на Kwork",
-                        url=config.KWORK_URL,
-                    )
-                ]
-            )
 
     return InlineKeyboardMarkup(rows)
 

@@ -18,23 +18,7 @@ def price_tag(amount: int) -> str:
 
 
 def welcome() -> str:
-    import config
-
-    if config.SALES_MODE:
-        return (
-            "◈ ДЕМО — запись в барбершоп\n\n"
-            "Это пример бота для салона.\n"
-            "Клиент записывается в Mini App, видит цены, "
-            "может внести предоплату.\n\n"
-            "Нажми «Записаться» — попробуй как клиент.\n"
-            "«Заказать для салона» — напиши мне."
-        )
-    return (
-        f"◈ {SHOP_NAME}\n\n"
-        "Запись на стрижку и бороду.\n"
-        "Предоплата по СБП с уникальным кодом.\n"
-        "«Мои записи» — вкладка в Mini App."
-    )
+    return f"{SHOP_NAME}\n\nЗапись онлайн — кнопка ниже."
 
 
 def pick_date() -> str:
@@ -85,25 +69,20 @@ def booking_pending(
     recipient: str,
 ) -> str:
     return (
-        "⏳ Запись ожидает подтверждения оплаты\n\n"
-        f"📅 {date_label}, {time_label}\n"
-        f"✂️ {haircut_name}\n"
-        f"🧔 {beard_name}\n"
-        f"💰 Итого: {price_tag(total)}\n\n"
-        f"Переведи {price_tag(prepayment)} по СБП:\n"
-        f"📱 {phone}\n"
-        f"👤 {recipient}\n"
-        f"🔑 Комментарий: {payment_code}\n\n"
-        f"Остаток в барбершопе: {price_tag(rest)}\n\n"
-        "Подтвердим запись после проверки перевода."
+        "Ждём оплату\n\n"
+        f"{date_label}, {time_label}\n"
+        f"{haircut_name}, {beard_name}\n"
+        f"Сумма: {price_tag(total)}\n\n"
+        f"Переведи {price_tag(prepayment)} на {phone}\n"
+        f"Комментарий: {payment_code}\n\n"
+        f"В салоне: {price_tag(rest)}"
     )
 
 
 def booking_payment_rejected(date_label: str, time_label: str) -> str:
     return (
-        "❌ Запись отменена\n\n"
-        f"📅 {date_label}, {time_label}\n\n"
-        "Оплата не подтверждена. Запишись заново, если нужно."
+        "Запись отменена\n\n"
+        f"{date_label}, {time_label}"
     )
 
 
@@ -117,17 +96,16 @@ def booking_success(
     rest: int = 0,
 ) -> str:
     lines = [
-        "✅ Запись подтверждена",
+        "Запись подтверждена",
         "",
-        f"📅 {date_label}, {time_label}",
-        f"✂️ {haircut_name}",
-        f"🧔 {beard_name}",
-        f"💰 Итого: {price_tag(total)}",
+        f"{date_label}, {time_label}",
+        f"{haircut_name}, {beard_name}",
+        f"Сумма: {price_tag(total)}",
     ]
     if prepayment:
-        lines.append(f"✅ Предоплата: {price_tag(prepayment)}")
-        lines.append(f"💵 Остаток в барбершопе: {price_tag(rest)}")
-    lines.extend(["", "Ждём тебя в KRIVEN"])
+        lines.append(f"Предоплата: {price_tag(prepayment)}")
+        lines.append(f"В салоне: {price_tag(rest)}")
+    lines.extend(["", "Ждём в KRIVEN"])
     return "\n".join(lines)
 
 

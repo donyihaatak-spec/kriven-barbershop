@@ -27,29 +27,7 @@ const booking = {
 };
 
 const screen = document.getElementById("screen");
-const progressFill = document.getElementById("progressFill");
-const stepLabels = document.querySelectorAll("#stepLabels span");
-const progressBlock = document.querySelector(".progress");
-const stepsBlock = document.getElementById("stepLabels");
 const tabsEl = document.getElementById("tabs");
-const salesBannerEl = document.getElementById("salesBanner");
-
-function setupSalesBanner() {
-  const cfg = catalog?.config || {};
-  if (!cfg.salesMode || !salesBannerEl) return;
-
-  const contact = cfg.salesContactUrl || "https://t.me/bonnement";
-  const kwork = cfg.kworkUrl || "";
-  salesBannerEl.classList.remove("hidden");
-  salesBannerEl.innerHTML = `
-    <div class="sales-title">Демо для барбершопов</div>
-    <div class="sales-text">Такой бот для твоего салона — под ключ за 3–5 дней</div>
-    <div class="sales-actions">
-      <a class="sales-btn primary" href="${contact}" target="_blank" rel="noopener">Заказать</a>
-      ${kwork ? `<a class="sales-btn" href="${kwork}" target="_blank" rel="noopener">Kwork</a>` : ""}
-    </div>
-  `;
-}
 
 function calcPrepayment(total) {
   const cfg = catalog?.config || {};
@@ -86,23 +64,11 @@ function formatDateLabel(iso) {
   return `${WEEKDAYS[(d.getDay() + 6) % 7]}, ${d.getDate()} ${MONTHS[d.getMonth()]}`;
 }
 
-function setBookingFlowVisible(visible) {
-  if (progressBlock) progressBlock.style.display = visible ? "" : "none";
-  if (stepsBlock) stepsBlock.style.display = visible ? "" : "none";
-}
-
-function updateProgress() {
-  const pct = ((step + 1) / 5) * 100;
-  progressFill.style.width = pct + "%";
-  stepLabels.forEach((el, i) => el.classList.toggle("active", i === step));
-}
-
 function setActiveTab(tab) {
   activeTab = tab;
   tabsEl?.querySelectorAll(".tab").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.tab === tab);
   });
-  setBookingFlowVisible(tab === "book");
   if (tab === "book") {
     renderDateScreen();
   } else {
@@ -178,7 +144,7 @@ async function submitBooking() {
       return;
     }
 
-    tg?.showAlert?.("Открой Mini App через кнопку в боте");
+    tg?.showAlert?.("Открой через бота");
     if (btn) btn.disabled = false;
     tg?.MainButton?.hideProgress?.();
   } catch {
@@ -189,33 +155,26 @@ async function submitBooking() {
 }
 
 function renderPendingScreen(message, paymentCode) {
-  step = 4;
-  updateProgress();
   screen.innerHTML = `
     <div class="success-screen">
-      <div class="success-icon">⏳</div>
-      <div class="success-title">Ожидает оплаты</div>
+      <div class="success-title">Ждём оплату</div>
       ${paymentCode ? `<div class="payment-code">${paymentCode}</div>` : ""}
       <div class="success-text" id="successMsg"></div>
-      <p class="pending-hint">После перевода админ проверит оплату и подтвердит запись. Статус — во вкладке «Мои записи».</p>
-      ${catalog?.config?.salesMode ? `<a class="sales-link" href="${catalog.config.salesContactUrl || "https://t.me/bonnement"}" target="_blank" rel="noopener">Заказать такой бот для салона →</a>` : ""}
+      <p class="pending-hint">После перевода подтвердим запись. Статус — в «Мои записи».</p>
     </div>
   `;
   const msgEl = document.getElementById("successMsg");
-  if (msgEl) {
-    msgEl.style.whiteSpace = "pre-line";
-    msgEl.textContent = message;
-  }
+  if (msgEl) msgEl.textContent = message;
 }
 
 async function renderMyBookingsScreen() {
   hideMainButton();
-  screen.innerHTML = `<div class="loading">Загрузка записей...</div>`;
+  screen.innerHTML = `<div class="loading">Загрузка...</div>`;
 
   if (!tg?.initData) {
     screen.innerHTML = `
       <div class="screen-title">Мои записи</div>
-      <div class="empty-state">Открой Mini App через кнопку в боте</div>
+      <div class="empty-state">Открой через бота</div>
     `;
     return;
   }
@@ -239,7 +198,7 @@ async function renderMyBookingsScreen() {
     if (!data.bookings?.length) {
       screen.innerHTML = `
         <div class="screen-title">Мои записи</div>
-        <div class="empty-state">Пока нет записей.<br>Нажми «Записаться».</div>
+        <div class="empty-state">Записей нет</div>
       `;
       return;
     }
@@ -248,24 +207,17 @@ async function renderMyBookingsScreen() {
       <div class="screen-title">Мои записи</div>
       <div class="bookings-list">
         ${data.bookings.map((b) => {
-          const statusLabel = b.status === "confirmed"
-            ? '<span class="status-badge confirmed">✅ Подтверждена</span>'
-            : '<span class="status-badge pending">⏳ Ждёт оплату</span>';
+          const status = b.status === "confirmed" ? "подтверждена" : "ждёт оплату";
           const codeLine = b.status === "pending" && b.payment_code
             ? `<div class="booking-code">Код: ${b.payment_code}</div>`
             : "";
           return `
           <div class="booking-card">
-            ${statusLabel}
-            <div class="booking-date">${b.date_label}</div>
-            <div class="booking-time">${b.time}</div>
-            <div class="booking-services">${b.haircut} · ${b.beard}</div>
-            <div class="booking-prices">
-              <span>Итого ${formatPrice(b.total)}</span>
-              <span class="prepay-badge">Предоплата ${formatPrice(b.prepayment)}</span>
-            </div>
+            <div class="booking-status">${status}</div>
+            <div class="booking-date">${b.date_label}, ${b.time}</div>
+            <div class="booking-meta">${b.haircut}, ${b.beard}</div>
+            <div class="booking-meta">${formatPrice(b.total)} · предоплата ${formatPrice(b.prepayment)}</div>
             ${codeLine}
-            <div class="booking-rest">Остаток в барбершопе: ${formatPrice(b.rest)}</div>
           </div>
         `}).join("")}
       </div>
@@ -324,8 +276,6 @@ async function fetchBookedTimes(isoDate) {
 
 function renderDateScreen() {
   if (activeTab !== "book") return;
-  step = 0;
-  updateProgress();
   hideMainButton();
 
   const { today, max, closed } = getAvailableDates();
@@ -334,7 +284,7 @@ function renderDateScreen() {
   let startPad = (firstDay.getDay() + 6) % 7;
 
   let html = `
-    <div class="screen-title">Выбери дату</div>
+    <div class="screen-title">Дата</div>
     <div class="calendar-nav">
       <button type="button" id="prevMonth">◀</button>
       <span>${MONTHS[calMonth]} ${calYear}</span>
@@ -380,15 +330,13 @@ function renderDateScreen() {
 }
 
 async function renderTimeScreen() {
-  step = 1;
-  updateProgress();
   hideMainButton();
   await fetchBookedTimes(booking.date);
 
   const slots = generateTimeSlots(booking.date);
   const html = `
-    <button class="back-btn" id="backBtn">◀ Назад</button>
-    <div class="screen-title">Выбери время</div>
+    <button class="back-btn" id="backBtn">Назад</button>
+    <div class="screen-title">Время</div>
     <p style="color:var(--chrome-dim);font-size:0.85rem;margin-bottom:16px">${formatDateLabel(booking.date)}</p>
     <div class="time-grid">
       ${slots.map((t) => {
@@ -412,23 +360,18 @@ async function renderTimeScreen() {
 function renderServiceCards(items, selectedKey) {
   return Object.entries(items).map(([key, item]) => `
     <div class="service-card${selectedKey === key ? " selected" : ""}" data-key="${key}">
-      <div class="left">
-        <span class="emoji">${item.emoji}</span>
-        <span class="name">${item.name}</span>
-      </div>
+      <span class="name">${item.name}</span>
       <span class="price">${formatPrice(item.price)}</span>
     </div>
   `).join("");
 }
 
 function renderHairScreen() {
-  step = 2;
-  updateProgress();
   hideMainButton();
 
   screen.innerHTML = `
-    <button class="back-btn" id="backBtn">◀ Назад</button>
-    <div class="screen-title">Вид стрижки</div>
+    <button class="back-btn" id="backBtn">Назад</button>
+    <div class="screen-title">Стрижка</div>
     <div class="service-list" id="hairList">
       ${renderServiceCards(catalog.haircuts, booking.haircut)}
     </div>
@@ -444,13 +387,11 @@ function renderHairScreen() {
 }
 
 function renderBeardScreen() {
-  step = 3;
-  updateProgress();
   hideMainButton();
 
   screen.innerHTML = `
-    <button class="back-btn" id="backBtn">◀ Назад</button>
-    <div class="screen-title">Вид бороды</div>
+    <button class="back-btn" id="backBtn">Назад</button>
+    <div class="screen-title">Борода</div>
     <div class="service-list" id="beardList">
       ${renderServiceCards(catalog.beards, booking.beard)}
     </div>
@@ -466,40 +407,33 @@ function renderBeardScreen() {
 }
 
 function renderConfirmScreen() {
-  step = 4;
-  updateProgress();
-
   const hair = catalog.haircuts[booking.haircut];
   const beard = catalog.beards[booking.beard];
   const total = hair.price + beard.price;
   const prepay = calcPrepayment(total);
   const rest = total - prepay;
   const cfg = catalog.config;
-  const percent = cfg.prepayPercent ?? 50;
 
   screen.innerHTML = `
-    <button class="back-btn" id="backBtn">◀ Назад</button>
-    <div class="screen-title">Подтверждение</div>
+    <button class="back-btn" id="backBtn">Назад</button>
+    <div class="screen-title">Итого</div>
     <div class="summary">
       <div class="summary-row"><span>Дата</span><span>${formatDateLabel(booking.date)}</span></div>
       <div class="summary-row"><span>Время</span><span>${booking.time}</span></div>
       <div class="summary-row"><span>Стрижка</span><span>${hair.name}</span></div>
       <div class="summary-row"><span>Борода</span><span>${beard.name}</span></div>
       <div class="summary-total">
-        <span class="label">Итого</span>
-        <span class="amount">${formatPrice(total)}</span>
+        <span>Сумма</span>
+        <span>${formatPrice(total)}</span>
       </div>
     </div>
     <div class="prepay-box">
-      <div class="prepay-title">Предоплата ${percent}%</div>
-      <div class="prepay-amount">${formatPrice(prepay)}</div>
-      <div class="prepay-rest">Остаток в барбершопе: ${formatPrice(rest)}</div>
-      <div class="prepay-hint">После брони получишь код для перевода по СБП:</div>
-      <div class="prepay-phone">${cfg.prepayPhone || "+79000000000"}</div>
-      <div class="prepay-name">${cfg.prepayName || "KRIVEN BARBERS"}</div>
-      <div class="prepay-comment">Код нужно указать в комментарии к переводу</div>
+      Предоплата: <strong>${formatPrice(prepay)}</strong><br>
+      Остаток в салоне: ${formatPrice(rest)}<br><br>
+      После записи переведи на <strong>${cfg.prepayPhone || "+79000000000"}</strong><br>
+      Код для комментария пришлём ниже.
     </div>
-    <button type="button" class="confirm-btn" id="confirmBtn">Забронировать</button>
+    <button type="button" class="confirm-btn" id="confirmBtn">Записаться</button>
   `;
 
   document.getElementById("backBtn").onclick = renderBeardScreen;
@@ -515,13 +449,12 @@ async function init() {
     btn.onclick = () => setActiveTab(btn.dataset.tab);
   });
 
-  screen.innerHTML = `<div class="loading">Загрузка KRIVEN...</div>`;
+  screen.innerHTML = `<div class="loading">Загрузка...</div>`;
   try {
     await loadCatalog();
-    setupSalesBanner();
     setActiveTab(startTab);
   } catch {
-    screen.innerHTML = `<div class="error-msg">Ошибка загрузки. Перезапусти Mini App.</div>`;
+    screen.innerHTML = `<div class="error-msg">Не загрузилось. Закрой и открой снова.</div>`;
   }
 }
 

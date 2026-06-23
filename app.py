@@ -86,7 +86,7 @@ async def on_startup(web_app: web.Application) -> None:
     )
     await ptb_app.bot.set_chat_menu_button(
         menu_button=MenuButtonWebApp(
-            text="◈ Записаться",
+            text="Записаться",
             web_app=WebAppInfo(url=public_url),
         )
     )

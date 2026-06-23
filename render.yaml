@@ -19,8 +19,4 @@ services:
       - key: ADMIN_PASSWORD
         sync: false
       - key: SALES_MODE
-        value: "true"
-      - key: SALES_CONTACT_URL
-        value: https://t.me/bonnement
-      - key: KWORK_URL
-        value: https://kwork.ru/user/bonnement
+        value: "false"
