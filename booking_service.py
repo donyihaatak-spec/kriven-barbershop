@@ -4,7 +4,7 @@ from typing import Any
 from datetime import date
 
 from catalog import BEARD_STYLES, HAIRCUT_STYLES
-from config import PREPAY_MIN, PREPAY_NAME, PREPAY_PERCENT, PREPAY_PHONE
+from config import PREPAY_MIN, PREPAY_NAME, PREPAY_PERCENT, PREPAY_PHONE, KWORK_URL, SALES_CONTACT_URL, SALES_MODE
 from database import (
     STATUS_CANCELLED,
     STATUS_CONFIRMED,
@@ -231,6 +231,9 @@ def catalog_for_webapp() -> str:
                 "prepayMin": PREPAY_MIN,
                 "prepayPhone": PREPAY_PHONE,
                 "prepayName": PREPAY_NAME,
+                "salesMode": SALES_MODE,
+                "salesContactUrl": SALES_CONTACT_URL,
+                "kworkUrl": KWORK_URL,
             },
         },
         ensure_ascii=False,

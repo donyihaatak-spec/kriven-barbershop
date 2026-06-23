@@ -32,6 +32,24 @@ const stepLabels = document.querySelectorAll("#stepLabels span");
 const progressBlock = document.querySelector(".progress");
 const stepsBlock = document.getElementById("stepLabels");
 const tabsEl = document.getElementById("tabs");
+const salesBannerEl = document.getElementById("salesBanner");
+
+function setupSalesBanner() {
+  const cfg = catalog?.config || {};
+  if (!cfg.salesMode || !salesBannerEl) return;
+
+  const contact = cfg.salesContactUrl || "https://t.me/bonnement";
+  const kwork = cfg.kworkUrl || "";
+  salesBannerEl.classList.remove("hidden");
+  salesBannerEl.innerHTML = `
+    <div class="sales-title">Демо для барбершопов</div>
+    <div class="sales-text">Такой бот для твоего салона — под ключ за 3–5 дней</div>
+    <div class="sales-actions">
+      <a class="sales-btn primary" href="${contact}" target="_blank" rel="noopener">Заказать</a>
+      ${kwork ? `<a class="sales-btn" href="${kwork}" target="_blank" rel="noopener">Kwork</a>` : ""}
+    </div>
+  `;
+}
 
 function calcPrepayment(total) {
   const cfg = catalog?.config || {};
@@ -180,6 +198,7 @@ function renderPendingScreen(message, paymentCode) {
       ${paymentCode ? `<div class="payment-code">${paymentCode}</div>` : ""}
       <div class="success-text" id="successMsg"></div>
       <p class="pending-hint">После перевода админ проверит оплату и подтвердит запись. Статус — во вкладке «Мои записи».</p>
+      ${catalog?.config?.salesMode ? `<a class="sales-link" href="${catalog.config.salesContactUrl || "https://t.me/bonnement"}" target="_blank" rel="noopener">Заказать такой бот для салона →</a>` : ""}
     </div>
   `;
   const msgEl = document.getElementById("successMsg");
@@ -499,6 +518,7 @@ async function init() {
   screen.innerHTML = `<div class="loading">Загрузка KRIVEN...</div>`;
   try {
     await loadCatalog();
+    setupSalesBanner();
     setActiveTab(startTab);
   } catch {
     screen.innerHTML = `<div class="error-msg">Ошибка загрузки. Перезапусти Mini App.</div>`;
