@@ -164,6 +164,16 @@ def cancel_booking(booking_id: int) -> dict | None:
     return dict(row) if row else None
 
 
+def get_user_booking_by_code(user_id: int, payment_code: str) -> dict | None:
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        row = conn.execute(
+            "SELECT * FROM bookings WHERE user_id = ? AND payment_code = ?",
+            (user_id, payment_code),
+        ).fetchone()
+    return dict(row) if row else None
+
+
 def get_user_bookings(user_id: int) -> list[dict]:
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row

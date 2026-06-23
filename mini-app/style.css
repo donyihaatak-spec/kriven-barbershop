@@ -432,6 +432,7 @@ body {
   border-radius: var(--radius);
   background: var(--bg-card);
   box-shadow: 0 0 20px rgba(255, 255, 255, 0.04);
+  transition: opacity 0.35s ease, transform 0.35s ease;
 }
 
 .pending-hint {
@@ -439,6 +440,100 @@ body {
   font-size: 13px;
   color: var(--muted);
   line-height: 1.45;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.fade-out {
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+}
+
+.success-screen.is-transitioning .success-text {
+  transition: opacity 0.3s ease;
+}
+
+.success-screen.confirmed-state .success-title,
+.success-title.confirmed-title {
+  color: #fff;
+}
+
+.confirm-check {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: check-pop 0.5s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+  box-shadow: 0 0 24px rgba(255, 255, 255, 0.08);
+}
+
+.confirm-check-mark {
+  font-size: 1.5rem;
+  line-height: 1;
+  color: #fff;
+  animation: check-draw 0.35s ease 0.15s both;
+}
+
+.success-text.confirmed-card {
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 0 28px rgba(255, 255, 255, 0.05);
+  animation: card-in 0.45s ease 0.1s both;
+}
+
+.success-screen.confirmed-state .success-title {
+  animation: title-in 0.4s ease both;
+}
+
+.success-screen.cancelled-state .success-title {
+  color: var(--muted);
+}
+
+@keyframes check-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes check-draw {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes title-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .tabs {

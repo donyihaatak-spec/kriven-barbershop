@@ -90,6 +90,7 @@ function formatDateLabel(iso) {
 }
 
 function setActiveTab(tab) {
+  stopStatusPoll();
   activeTab = tab;
   tabsEl?.querySelectorAll(".tab").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.tab === tab);
@@ -154,7 +155,7 @@ async function submitBooking() {
       if (result.ok) {
         tg?.MainButton?.hideProgress?.();
         hideMainButton();
-        renderPendingScreen(result.message, result.payment_code);
+        renderPendingScreen(result.message, result.payment_code, result.booking_id);
         return;
       }
 
@@ -180,19 +181,190 @@ async function submitBooking() {
   }
 }
 
-function renderPendingScreen(message, paymentCode) {
+function renderPendingScreen(message, paymentCode, bookingId) {
+  stopStatusPoll();
   setProgressVisible(false);
   setTabsVisible(false);
   setScreenHtml(`
-    <div class="success-screen">
-      <div class="success-title">Ждём оплату</div>
-      ${paymentCode ? `<div class="payment-code">${paymentCode}</div>` : ""}
+    <div class="success-screen pending-state">
+      <div class="success-title" id="pendingTitle">Ждём оплату</div>
+      ${paymentCode ? `<div class="payment-code" id="paymentCode">${paymentCode}</div>` : ""}
       <div class="success-text" id="successMsg"></div>
-      <p class="pending-hint">После перевода подтвердим запись. Статус — в «Мои записи».</p>
+      <p class="pending-hint" id="pendingHint">После перевода подтвердим запись. Статус — в «Мои записи».</p>
     </div>
   `);
   const msgEl = document.getElementById("successMsg");
   if (msgEl) msgEl.textContent = message;
+  if (tg?.initData && (paymentCode || bookingId)) {
+    startStatusPoll({ paymentCode, bookingId });
+  }
+}
+
+let statusPollTimer = null;
+let statusPollTarget = null;
+
+function stopStatusPoll() {
+  if (statusPollTimer) {
+    clearInterval(statusPollTimer);
+    statusPollTimer = null;
+  }
+  statusPollTarget = null;
+}
+
+function formatConfirmedMessage(b) {
+  let text = `${b.date_label}, ${b.time}\n${b.haircut}, ${b.beard}\nСумма: ${formatPrice(b.total)}`;
+  if (b.prepayment) {
+    text += `\nПредоплата: ${formatPrice(b.prepayment)}`;
+    text += `\nВ салоне: ${formatPrice(b.rest)}`;
+  }
+  text += "\n\nЖдём в KRIVEN";
+  return text;
+}
+
+async function fetchBookingStatus({ paymentCode, bookingId }) {
+  const body = { initData: tg.initData };
+  if (bookingId) body.booking_id = bookingId;
+  if (paymentCode) body.payment_code = paymentCode;
+
+  const res = await fetch("/api/booking-status", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (res.ok) return res.json();
+
+  // Fallback for older deploys: scan my-bookings
+  const listRes = await fetch("/api/my-bookings", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ initData: tg.initData }),
+  });
+  const listData = await listRes.json();
+  if (!listData.ok || !listData.bookings?.length) return { ok: false };
+
+  const match = listData.bookings.find((b) => {
+    if (bookingId && b.booking_id === bookingId) return true;
+    return paymentCode && b.payment_code === paymentCode;
+  });
+  if (!match) return { ok: false };
+
+  return {
+    ok: true,
+    status: match.status,
+    booking: {
+      date_label: match.date_label,
+      time: match.time,
+      haircut: match.haircut,
+      beard: match.beard,
+      total: match.total,
+      prepayment: match.prepayment,
+      rest: match.rest,
+    },
+  };
+}
+
+function startStatusPoll(target) {
+  stopStatusPoll();
+  statusPollTarget = target;
+
+  const poll = async () => {
+    if (!statusPollTarget || !tg?.initData) return;
+    try {
+      const data = await fetchBookingStatus(statusPollTarget);
+      if (!data.ok) return;
+      if (data.status === "confirmed") {
+        stopStatusPoll();
+        playConfirmedTransition(data.booking);
+      } else if (data.status === "cancelled") {
+        stopStatusPoll();
+        playCancelledTransition(data.booking);
+      }
+    } catch {
+      /* retry on next tick */
+    }
+  };
+
+  poll();
+  statusPollTimer = setInterval(poll, 2000);
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && statusPollTarget) {
+    fetchBookingStatus(statusPollTarget).then((data) => {
+      if (!data.ok) return;
+      if (data.status === "confirmed") {
+        stopStatusPoll();
+        playConfirmedTransition(data.booking);
+      } else if (data.status === "cancelled") {
+        stopStatusPoll();
+        playCancelledTransition(data.booking);
+      }
+    }).catch(() => {});
+  }
+});
+
+function playConfirmedTransition(booking) {
+  const root = screen.querySelector(".success-screen");
+  if (!root) return;
+
+  root.classList.add("is-transitioning");
+  root.querySelector("#paymentCode")?.classList.add("fade-out");
+  root.querySelector("#pendingHint")?.classList.add("fade-out");
+
+  setTimeout(() => {
+    root.querySelector("#paymentCode")?.remove();
+    root.querySelector("#pendingHint")?.remove();
+
+    const title = root.querySelector("#pendingTitle");
+    if (title) {
+      title.textContent = "Запись подтверждена";
+      title.classList.add("confirmed-title");
+    }
+
+    if (!root.querySelector(".confirm-check")) {
+      const check = document.createElement("div");
+      check.className = "confirm-check";
+      check.innerHTML = '<span class="confirm-check-mark">✓</span>';
+      root.insertBefore(check, root.firstChild);
+    }
+
+    const msgEl = root.querySelector("#successMsg");
+    if (msgEl && booking) {
+      msgEl.textContent = formatConfirmedMessage(booking);
+      msgEl.classList.add("confirmed-card");
+    }
+
+    root.classList.remove("pending-state", "is-transitioning");
+    root.classList.add("confirmed-state");
+    setTabsVisible(true);
+    tg?.HapticFeedback?.notificationOccurred?.("success");
+  }, 420);
+}
+
+function playCancelledTransition(booking) {
+  const root = screen.querySelector(".success-screen");
+  if (!root) return;
+
+  root.classList.add("is-transitioning", "cancelled-state");
+  root.querySelector("#paymentCode")?.classList.add("fade-out");
+  root.querySelector("#pendingHint")?.classList.add("fade-out");
+
+  setTimeout(() => {
+    root.querySelector("#paymentCode")?.remove();
+    root.querySelector("#pendingHint")?.remove();
+
+    const title = root.querySelector("#pendingTitle");
+    if (title) title.textContent = "Запись отменена";
+
+    const msgEl = root.querySelector("#successMsg");
+    if (msgEl && booking) {
+      msgEl.textContent = `${booking.date_label}, ${booking.time}`;
+    }
+
+    root.classList.remove("pending-state", "is-transitioning");
+    setTabsVisible(true);
+    tg?.HapticFeedback?.notificationOccurred?.("error");
+  }, 420);
 }
 
 async function renderMyBookingsScreen() {

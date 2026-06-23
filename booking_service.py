@@ -16,6 +16,7 @@ from database import (
     get_admin_stats,
     get_booked_times_for_date,
     get_booking_by_id,
+    get_user_booking_by_code,
     get_user_bookings,
 )
 from keyboards import format_date_label
@@ -62,6 +63,7 @@ def get_my_bookings_api(user_id: int) -> list[dict[str, Any]]:
         payload = booking_payload_from_row(row)
         result.append(
             {
+                "booking_id": row["id"],
                 "date": row["booking_date"],
                 "date_label": payload["date_label"],
                 "time": payload["time"],
@@ -75,6 +77,35 @@ def get_my_bookings_api(user_id: int) -> list[dict[str, Any]]:
             }
         )
     return result
+
+
+def check_booking_status_api(
+    user_id: int,
+    payment_code: str | None = None,
+    booking_id: int | None = None,
+) -> dict[str, Any] | None:
+    row = None
+    if booking_id:
+        candidate = get_booking_by_id(booking_id)
+        if candidate and candidate.get("user_id") == user_id:
+            row = candidate
+    elif payment_code:
+        row = get_user_booking_by_code(user_id, payment_code.strip().upper())
+    if not row:
+        return None
+    payload = booking_payload_from_row(row)
+    return {
+        "status": row["status"],
+        "booking": {
+            "date_label": payload["date_label"],
+            "time": payload["time"],
+            "haircut": payload["haircut"],
+            "beard": payload["beard"],
+            "total": payload["total"],
+            "prepayment": payload["prepayment"],
+            "rest": payload["rest"],
+        },
+    }
 
 
 def submit_booking(

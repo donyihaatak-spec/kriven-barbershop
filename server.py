@@ -9,6 +9,7 @@ from admin_routes import register_admin_routes
 from booking_service import (
     admin_notification_text,
     catalog_for_webapp,
+    check_booking_status_api,
     get_my_bookings_api,
     get_slots_api_data,
     submit_booking,
@@ -84,6 +85,7 @@ async def handle_book(request: web.Request) -> web.Response:
         "message": text,
         "pending": ok,
         "payment_code": payload.get("payment_code") if payload else None,
+        "booking_id": payload.get("booking_id") if payload else None,
     })
 
 
@@ -102,6 +104,36 @@ async def handle_my_bookings(request: web.Request) -> web.Response:
     return web.json_response({"ok": True, "bookings": bookings})
 
 
+async def handle_booking_status(request: web.Request) -> web.Response:
+    try:
+        body = await request.json()
+    except json.JSONDecodeError:
+        return web.json_response({"ok": False, "error": "Неверный формат"}, status=400)
+
+    init_data = body.get("initData", "")
+    user = validate_webapp_init_data(init_data, BOT_TOKEN)
+    if not user:
+        return web.json_response({"ok": False, "error": "Открой через бота"}, status=403)
+
+    payment_code = (body.get("payment_code") or "").strip()
+    booking_id_raw = body.get("booking_id")
+    booking_id = None
+    if booking_id_raw is not None:
+        try:
+            booking_id = int(booking_id_raw)
+        except (TypeError, ValueError):
+            return web.json_response({"ok": False, "error": "Неверный ID записи"}, status=400)
+
+    if not payment_code and not booking_id:
+        return web.json_response({"ok": False, "error": "Нет кода оплаты"}, status=400)
+
+    result = check_booking_status_api(int(user["id"]), payment_code or None, booking_id)
+    if not result:
+        return web.json_response({"ok": False, "error": "Запись не найдена"}, status=404)
+
+    return web.json_response({"ok": True, **result})
+
+
 async def handle_index(_request: web.Request) -> web.Response:
     return web.FileResponse(MINI_APP_DIR / "index.html")
 
@@ -114,6 +146,7 @@ def create_app() -> web.Application:
     app.router.add_get("/api/slots/{date}", handle_slots)
     app.router.add_post("/api/book", handle_book)
     app.router.add_post("/api/my-bookings", handle_my_bookings)
+    app.router.add_post("/api/booking-status", handle_booking_status)
     app.router.add_static("/", MINI_APP_DIR, show_index=False)
     return app
 
