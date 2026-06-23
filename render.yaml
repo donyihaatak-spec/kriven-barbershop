@@ -18,5 +18,9 @@ services:
         value: KRIVEN BARBERS
       - key: ADMIN_PASSWORD
         sync: false
+      - key: REMINDER_ENABLED
+        value: "true"
+      - key: REMINDER_HOUR
+        value: "18"
       - key: SALES_MODE
         value: "false"

@@ -635,3 +635,22 @@ body {
   letter-spacing: 0.08em;
   font-size: 12px;
 }
+
+.cancel-booking-btn {
+  margin-top: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 120, 120, 0.35);
+  border-radius: var(--radius);
+  background: rgba(255, 80, 80, 0.08);
+  color: #e8a0a0;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.2s;
+}
+
+.cancel-booking-btn:disabled {
+  opacity: 0.45;
+}

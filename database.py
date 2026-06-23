@@ -23,6 +23,8 @@ def _migrate(conn: sqlite3.Connection) -> None:
         )
     if "payment_code" not in cols:
         conn.execute("ALTER TABLE bookings ADD COLUMN payment_code TEXT")
+    if "reminder_sent" not in cols:
+        conn.execute("ALTER TABLE bookings ADD COLUMN reminder_sent INTEGER NOT NULL DEFAULT 0")
 
 
 def init_db() -> None:
@@ -162,6 +164,68 @@ def cancel_booking(booking_id: int) -> dict | None:
             return None
         row = conn.execute("SELECT * FROM bookings WHERE id = ?", (booking_id,)).fetchone()
     return dict(row) if row else None
+
+
+def _booking_is_in_future(row: dict) -> bool:
+    try:
+        hour, minute = map(int, str(row["booking_time"]).split(":")[:2])
+        booking_day = date.fromisoformat(row["booking_date"])
+        booking_dt = datetime(booking_day.year, booking_day.month, booking_day.day, hour, minute)
+        return booking_dt > datetime.now()
+    except (TypeError, ValueError):
+        return False
+
+
+def user_cancel_booking(booking_id: int, user_id: int) -> dict | None:
+    row = get_booking_by_id(booking_id)
+    if not row or row["user_id"] != user_id:
+        return None
+    if row["status"] not in (STATUS_PENDING, STATUS_CONFIRMED):
+        return None
+    if not _booking_is_in_future(row):
+        return None
+
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        conn.execute(
+            """
+            UPDATE bookings
+            SET status = ?
+            WHERE id = ? AND user_id = ? AND status IN (?, ?)
+            """,
+            (STATUS_CANCELLED, booking_id, user_id, STATUS_PENDING, STATUS_CONFIRMED),
+        )
+        if conn.total_changes == 0:
+            return None
+        updated = conn.execute("SELECT * FROM bookings WHERE id = ?", (booking_id,)).fetchone()
+    return dict(updated) if updated else None
+
+
+def can_user_cancel(row: dict) -> bool:
+    return row.get("status") in (STATUS_PENDING, STATUS_CONFIRMED) and _booking_is_in_future(row)
+
+
+def get_bookings_for_reminder(reminder_date: str) -> list[dict]:
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            """
+            SELECT * FROM bookings
+            WHERE booking_date = ?
+              AND status = ?
+              AND reminder_sent = 0
+            """,
+            (reminder_date, STATUS_CONFIRMED),
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def mark_reminder_sent(booking_id: int) -> None:
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute(
+            "UPDATE bookings SET reminder_sent = 1 WHERE id = ?",
+            (booking_id,),
+        )
 
 
 def get_user_booking_by_code(user_id: int, payment_code: str) -> dict | None:

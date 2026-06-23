@@ -11,6 +11,7 @@ from config import ADMIN_CHAT_ID, BOT_TOKEN, WEBAPP_URL
 from database import init_db
 from handlers import admin_command, booking_callback, menu_callback, payment_callback, price_command, start_command
 from server import create_app
+from reminders import reminder_loop
 from webapp_handlers import webapp_data_handler
 
 logging.basicConfig(
@@ -92,6 +93,7 @@ async def on_startup(web_app: web.Application) -> None:
     )
     logger.info("Webhook: %s", webhook_url)
     logger.info("Mini App: %s", public_url)
+    asyncio.create_task(reminder_loop())
 
 
 async def on_cleanup(_web_app: web.Application) -> None:

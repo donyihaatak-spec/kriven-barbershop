@@ -8,11 +8,14 @@ from aiohttp import web
 from admin_routes import register_admin_routes
 from booking_service import (
     admin_notification_text,
+    admin_user_cancelled_text,
     catalog_for_webapp,
     check_booking_status_api,
     get_my_bookings_api,
     get_slots_api_data,
     submit_booking,
+    user_cancel_booking_api,
+    user_self_cancel_message,
 )
 from config import ADMIN_CHAT_ID, BOT_TOKEN
 from keyboards import admin_payment_keyboard_api
@@ -134,6 +137,40 @@ async def handle_booking_status(request: web.Request) -> web.Response:
     return web.json_response({"ok": True, **result})
 
 
+async def handle_cancel_booking(request: web.Request) -> web.Response:
+    try:
+        body = await request.json()
+    except json.JSONDecodeError:
+        return web.json_response({"ok": False, "error": "Неверный формат"}, status=400)
+
+    init_data = body.get("initData", "")
+    user = validate_webapp_init_data(init_data, BOT_TOKEN)
+    if not user:
+        return web.json_response({"ok": False, "error": "Открой через бота"}, status=403)
+
+    try:
+        booking_id = int(body.get("booking_id"))
+    except (TypeError, ValueError):
+        return web.json_response({"ok": False, "error": "Неверный ID записи"}, status=400)
+
+    ok, _, payload = user_cancel_booking_api(int(user["id"]), booking_id)
+    if not ok or not payload:
+        return web.json_response({"ok": False, "error": "Не удалось отменить запись"}, status=400)
+
+    await send_telegram_message(int(user["id"]), user_self_cancel_message(payload))
+    if ADMIN_CHAT_ID:
+        await send_telegram_message(
+            ADMIN_CHAT_ID,
+            admin_user_cancelled_text(
+                payload,
+                f"{user.get('first_name', '')} {user.get('last_name', '')}".strip() or "—",
+                user.get("username"),
+            ),
+        )
+
+    return web.json_response({"ok": True, "status": "cancelled"})
+
+
 async def handle_index(_request: web.Request) -> web.Response:
     return web.FileResponse(MINI_APP_DIR / "index.html")
 
@@ -147,6 +184,7 @@ def create_app() -> web.Application:
     app.router.add_post("/api/book", handle_book)
     app.router.add_post("/api/my-bookings", handle_my_bookings)
     app.router.add_post("/api/booking-status", handle_booking_status)
+    app.router.add_post("/api/cancel-booking", handle_cancel_booking)
     app.router.add_static("/", MINI_APP_DIR, show_index=False)
     return app
 

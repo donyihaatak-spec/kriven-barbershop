@@ -5,10 +5,12 @@ from datetime import date
 
 from catalog import BEARD_STYLES, HAIRCUT_STYLES
 from config import PREPAY_MIN, PREPAY_NAME, PREPAY_PERCENT, PREPAY_PHONE, KWORK_URL, SALES_CONTACT_URL, SALES_MODE
+from config import BOOKING_DAYS_AHEAD, CLOSED_WEEKDAYS, SLOT_MINUTES, WORK_END_HOUR, WORK_START_HOUR
 from database import (
     STATUS_CANCELLED,
     STATUS_CONFIRMED,
     STATUS_PENDING,
+    can_user_cancel,
     cancel_booking,
     confirm_booking,
     create_booking,
@@ -18,6 +20,7 @@ from database import (
     get_booking_by_id,
     get_user_booking_by_code,
     get_user_bookings,
+    user_cancel_booking,
 )
 from keyboards import format_date_label
 
@@ -74,9 +77,26 @@ def get_my_bookings_api(user_id: int) -> list[dict[str, Any]]:
                 "rest": payload["rest"],
                 "payment_code": payload["payment_code"],
                 "status": payload["status"],
+                "can_cancel": can_user_cancel(row),
             }
         )
     return result
+
+
+def user_cancel_booking_api(user_id: int, booking_id: int) -> tuple[bool, str, dict[str, Any] | None]:
+    row = user_cancel_booking(booking_id, user_id)
+    if not row:
+        return False, "Не удалось отменить. Возможно, время уже прошло.", None
+    return True, "cancelled", booking_payload_from_row(row)
+
+
+def admin_user_cancelled_text(payload: dict[str, Any], full_name: str, username: str | None) -> str:
+    return branding.admin_user_cancelled(
+        full_name,
+        username,
+        payload["date_label"],
+        payload["time"],
+    )
 
 
 def check_booking_status_api(
@@ -194,6 +214,10 @@ def user_cancelled_message(payload: dict[str, Any]) -> str:
     )
 
 
+def user_self_cancel_message(payload: dict[str, Any]) -> str:
+    return branding.user_self_cancel(payload["date_label"], payload["time"])
+
+
 def format_admin_booking(row: dict) -> dict[str, Any]:
     payload = booking_payload_from_row(row)
     payload["username"] = row.get("username")
@@ -253,11 +277,11 @@ def catalog_for_webapp() -> str:
             "haircuts": HAIRCUT_STYLES,
             "beards": BEARD_STYLES,
             "config": {
-                "workStart": 10,
-                "workEnd": 20,
-                "slotMinutes": 30,
-                "closedWeekdays": [6],
-                "daysAhead": 30,
+                "workStart": WORK_START_HOUR,
+                "workEnd": WORK_END_HOUR,
+                "slotMinutes": SLOT_MINUTES,
+                "closedWeekdays": sorted(CLOSED_WEEKDAYS),
+                "daysAhead": BOOKING_DAYS_AHEAD,
                 "prepayPercent": PREPAY_PERCENT,
                 "prepayMin": PREPAY_MIN,
                 "prepayPhone": PREPAY_PHONE,

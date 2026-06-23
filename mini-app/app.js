@@ -412,6 +412,9 @@ async function renderMyBookingsScreen() {
           const codeLine = b.status === "pending" && b.payment_code
             ? `<div class="booking-code">Код: ${b.payment_code}</div>`
             : "";
+          const cancelBtn = b.can_cancel
+            ? `<button type="button" class="cancel-booking-btn" data-id="${b.booking_id}">Отменить</button>`
+            : "";
           return `
           <div class="booking-card ${b.status}">
             <div class="booking-status">${status}</div>
@@ -419,15 +422,60 @@ async function renderMyBookingsScreen() {
             <div class="booking-meta">${b.haircut}, ${b.beard}</div>
             <div class="booking-meta">${formatPrice(b.total)} · предоплата ${formatPrice(b.prepayment)}</div>
             ${codeLine}
+            ${cancelBtn}
           </div>
         `}).join("")}
       </div>
     `;
+
+    screen.querySelectorAll(".cancel-booking-btn").forEach((btn) => {
+      btn.onclick = () => cancelBooking(Number(btn.dataset.id), btn);
+    });
   } catch {
     screen.innerHTML = `
       <div class="screen-title">Мои записи</div>
       <div class="empty-state">Ошибка сети. Попробуй позже.</div>
     `;
+  }
+}
+
+function askConfirm(message) {
+  return new Promise((resolve) => {
+    if (tg?.showConfirm) {
+      tg.showConfirm(message, resolve);
+      return;
+    }
+    resolve(window.confirm(message));
+  });
+}
+
+async function cancelBooking(bookingId, btn) {
+  if (!tg?.initData) {
+    tg?.showAlert?.("Открой через бота");
+    return;
+  }
+
+  const confirmed = await askConfirm("Отменить эту запись?");
+  if (!confirmed) return;
+
+  if (btn) btn.disabled = true;
+  try {
+    const res = await fetch("/api/cancel-booking", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ initData: tg.initData, booking_id: bookingId }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      tg?.HapticFeedback?.notificationOccurred?.("warning");
+      renderMyBookingsScreen();
+      return;
+    }
+    tg?.showAlert?.(data.error || "Не удалось отменить");
+    if (btn) btn.disabled = false;
+  } catch {
+    tg?.showAlert?.("Ошибка сети");
+    if (btn) btn.disabled = false;
   }
 }
 

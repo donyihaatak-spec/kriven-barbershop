@@ -16,6 +16,9 @@ PREPAY_PHONE = os.getenv("PREPAY_PHONE", "+79000000000")
 PREPAY_NAME = os.getenv("PREPAY_NAME", "KRIVEN BARBERS")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 
+REMINDER_ENABLED = os.getenv("REMINDER_ENABLED", "true").lower() in ("1", "true", "yes")
+REMINDER_HOUR = int(os.getenv("REMINDER_HOUR", "18"))
+
 SALES_MODE = os.getenv("SALES_MODE", "").lower() in ("1", "true", "yes")
 SALES_CONTACT_URL = os.getenv("SALES_CONTACT_URL", "https://t.me/bonnement")
 KWORK_URL = os.getenv("KWORK_URL", "https://kwork.ru/user/bonnement")

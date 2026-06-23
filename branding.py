@@ -113,6 +113,37 @@ def booking_cancelled() -> str:
     return "Запись отменена. Нажми кнопку, когда будешь готов."
 
 
+def booking_reminder(
+    date_label: str,
+    time_label: str,
+    haircut_name: str,
+    beard_name: str,
+) -> str:
+    return (
+        f"Напоминание · {SHOP_NAME}\n\n"
+        f"Завтра: {date_label}, {time_label}\n"
+        f"{haircut_name}, {beard_name}\n\n"
+        "Ждём тебя."
+    )
+
+
+def user_self_cancel(date_label: str, time_label: str) -> str:
+    return f"Ты отменил запись\n\n{date_label}, {time_label}"
+
+
+def admin_user_cancelled(
+    full_name: str,
+    username: str | None,
+    date_label: str,
+    time_label: str,
+) -> str:
+    return (
+        "Клиент отменил запись\n\n"
+        f"👤 {full_name} (@{username or '—'})\n"
+        f"📅 {date_label}, {time_label}"
+    )
+
+
 def slot_taken() -> str:
     return "Это время занято. Выбери другой слот."
 
