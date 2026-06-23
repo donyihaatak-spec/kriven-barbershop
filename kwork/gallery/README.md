@@ -1,15 +1,22 @@
 # Скрины для галереи Kwork
 
-Загрузи в том же порядке:
+**Реальные скрины** из Mini App и админки — не AI-мокапы.
 
-| Файл | Что показывает |
-|------|----------------|
-| `01-calendar.png` | Выбор даты |
-| `02-summary.png` | Итого перед записью |
-| `03-payment.png` | Экран оплаты |
-| `04-confirmed.png` | Подтверждённая запись |
-| `05-admin.png` | Админ-панель |
+| Файл | Экран | URL для пересъёмки |
+|------|--------|-------------------|
+| `01-calendar.png` | Календарь | `/?demo=calendar` |
+| `02-summary.png` | Итого | `/?demo=summary` |
+| `03-payment.png` | Ждём оплату | `/?demo=payment` |
+| `04-confirmed.png` | Подтверждено | `/?demo=confirmed` |
+| `05-admin.png` | Админка | `/admin/demo` |
 
-Для видео: запиши 30 сек экрана телефона — запись → оплата → подтверждение в админке.
+## Переснять локально
 
-Демо для покупателя: https://t.me/kriventestbot
+```bash
+python -m server  # или python -c "from server import run_server; run_server(8765)"
+python scripts/capture_gallery.py
+```
+
+Или открой URL в браузере (ширина ~390px) и сделай скрин вручную.
+
+Демо: https://t.me/kriventestbot

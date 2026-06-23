@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KRIVEN Admin — demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/admin/assets/style.css" />
+</head>
+<body>
+  <div class="chrome-glow"></div>
+
+  <div id="appScreen" class="screen">
+    <header class="header">
+      <div>
+        <div class="logo">◈ KRIVEN</div>
+        <div class="subtitle">ADMIN PANEL</div>
+      </div>
+      <button type="button" class="ghost-btn">Выйти</button>
+    </header>
+
+    <div class="stats">
+      <div class="stat-card"><div class="stat-value">2</div><div class="stat-label">Ждут оплату</div></div>
+      <div class="stat-card"><div class="stat-value">4</div><div class="stat-label">Сегодня всего</div></div>
+      <div class="stat-card"><div class="stat-value">3</div><div class="stat-label">Сегодня подтв.</div></div>
+      <div class="stat-card"><div class="stat-value">12</div><div class="stat-label">Предстоящие</div></div>
+    </div>
+
+    <div class="filters">
+      <button type="button" class="filter active">Ожидают оплату</button>
+      <button type="button" class="filter">Сегодня</button>
+      <button type="button" class="filter">Предстоящие</button>
+      <button type="button" class="filter">Все</button>
+    </div>
+
+    <div id="bookings">
+      <div class="card">
+        <div class="card-top">
+          <div>
+            <div class="client">Алексей</div>
+            <div class="meta">@alex_barber_client</div>
+          </div>
+          <span class="badge pending">⏳ Ждёт оплату</span>
+        </div>
+        <div class="meta">📅 Чт, 25 Июнь, 12:00</div>
+        <div class="services">✂️ Фейд · 🧔 Контур + укладка</div>
+        <div class="money">Итого 1 500 ₽ · предоплата 750 ₽ · в барбершопе 750 ₽</div>
+        <div class="code">🔑 KRV-E029</div>
+        <div class="actions">
+          <button type="button" class="btn-ok">✅ Оплата получена</button>
+          <button type="button" class="btn-no">❌ Отменить</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-top">
+          <div>
+            <div class="client">Дмитрий</div>
+            <div class="meta">@dmitry_h</div>
+          </div>
+          <span class="badge pending">⏳ Ждёт оплату</span>
+        </div>
+        <div class="meta">📅 Пт, 26 Июнь, 16:30</div>
+        <div class="services">✂️ Андеркат · 🧔 Опасное бритие</div>
+        <div class="money">Итого 2 000 ₽ · предоплата 1 000 ₽ · в барбершопе 1 000 ₽</div>
+        <div class="code">🔑 KRV-6E66</div>
+        <div class="actions">
+          <button type="button" class="btn-ok">✅ Оплата получена</button>
+          <button type="button" class="btn-no">❌ Отменить</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

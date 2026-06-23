@@ -37,6 +37,10 @@ async def handle_admin_index(_request: web.Request) -> web.FileResponse:
     return web.FileResponse(ADMIN_DIR / "index.html")
 
 
+async def handle_admin_demo(_request: web.Request) -> web.FileResponse:
+    return web.FileResponse(ADMIN_DIR / "demo.html")
+
+
 async def handle_admin_login(request: web.Request) -> web.Response:
     if not admin_auth_enabled():
         return web.json_response(
@@ -86,6 +90,7 @@ async def handle_admin_cancel(request: web.Request) -> web.Response:
 
 def register_admin_routes(app: web.Application) -> None:
     app.router.add_get("/admin", handle_admin_index)
+    app.router.add_get("/admin/demo", handle_admin_demo)
     app.router.add_post("/api/admin/login", handle_admin_login)
     app.router.add_get("/api/admin/dashboard", handle_admin_dashboard)
     app.router.add_post("/api/admin/bookings/{booking_id}/confirm", handle_admin_confirm)

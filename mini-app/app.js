@@ -699,7 +699,7 @@ function renderConfirmScreen() {
 
 async function init() {
   const params = new URLSearchParams(window.location.search);
-  const startTab = params.get("tab") === "bookings" ? "bookings" : "book";
+  const demo = params.get("demo");
 
   tabsEl?.querySelectorAll(".tab").forEach((btn) => {
     btn.onclick = () => setActiveTab(btn.dataset.tab);
@@ -708,10 +708,148 @@ async function init() {
   screen.innerHTML = `<div class="loading">Загрузка...</div>`;
   try {
     await loadCatalog();
+    if (demo) {
+      document.body.classList.add("demo-mode");
+      runDemoScreen(demo);
+      return;
+    }
+    const startTab = params.get("tab") === "bookings" ? "bookings" : "book";
     setActiveTab(startTab);
   } catch {
     screen.innerHTML = `<div class="error-msg">Не загрузилось. Закрой и открой снова.</div>`;
   }
+}
+
+function buildDemoPendingMessage() {
+  const hair = catalog.haircuts.undercut;
+  const beard = catalog.beards.razor;
+  const total = hair.price + beard.price;
+  const prepay = calcPrepayment(total);
+  const rest = total - prepay;
+  const dateLabel = formatDateLabel("2026-06-25");
+  const phone = catalog.config?.prepayPhone || "+79991234567";
+  return (
+    `Ждём оплату\n\n${dateLabel}, 16:30\n${hair.name}, ${beard.name}\n` +
+    `Сумма: ${formatPrice(total)}\n\nПереведи ${formatPrice(prepay)} на ${phone}\n` +
+    `Комментарий: KRV-E029\n\nВ салоне: ${formatPrice(rest)}`
+  );
+}
+
+function renderDemoConfirmed() {
+  stopStatusPoll();
+  setProgressVisible(false);
+  setTabsVisible(true);
+  const hair = catalog.haircuts.undercut;
+  const beard = catalog.beards.razor;
+  const total = hair.price + beard.price;
+  const prepay = calcPrepayment(total);
+  const rest = total - prepay;
+  const bookingData = {
+    date_label: formatDateLabel("2026-06-25"),
+    time: "16:30",
+    haircut: hair.name,
+    beard: beard.name,
+    total,
+    prepayment: prepay,
+    rest,
+  };
+
+  setScreenHtml(`
+    <div class="success-screen confirmed-state">
+      <div class="confirm-check"><span class="confirm-check-mark">✓</span></div>
+      <div class="success-title confirmed-title">Запись подтверждена</div>
+      <div class="success-text confirmed-card" id="successMsg"></div>
+    </div>
+  `);
+  const msgEl = document.getElementById("successMsg");
+  if (msgEl) msgEl.textContent = formatConfirmedMessage(bookingData);
+}
+
+function runDemoScreen(name) {
+  activeTab = "book";
+  calYear = 2026;
+  calMonth = 5;
+  booking.date = "2026-06-25";
+  booking.time = "16:30";
+  booking.haircut = "undercut";
+  booking.beard = "razor";
+
+  switch (name) {
+    case "calendar":
+      setActiveTab("book");
+      renderDateScreen();
+      break;
+    case "summary":
+      renderConfirmScreen();
+      break;
+    case "payment":
+      renderPendingScreen(buildDemoPendingMessage(), "KRV-E029", null);
+      break;
+    case "confirmed":
+      renderDemoConfirmed();
+      break;
+    case "bookings":
+      renderDemoBookings();
+      break;
+    default:
+      renderDateScreen();
+  }
+}
+
+function renderDemoBookings() {
+  hideMainButton();
+  setTabsVisible(true);
+  setProgressVisible(false);
+  activeTab = "bookings";
+  tabsEl?.querySelectorAll(".tab").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.tab === "bookings");
+  });
+
+  const items = [
+    {
+      status: "confirmed",
+      date_label: formatDateLabel("2026-06-25"),
+      time: "16:30",
+      haircut: catalog.haircuts.undercut.name,
+      beard: catalog.beards.razor.name,
+      total: 2000,
+      prepayment: 1000,
+    },
+    {
+      status: "pending",
+      date_label: formatDateLabel("2026-06-28"),
+      time: "12:00",
+      haircut: catalog.haircuts.fade.name,
+      beard: catalog.beards.contour.name,
+      total: 1500,
+      prepayment: 750,
+      payment_code: "KRV-E029",
+    },
+  ];
+
+  screen.innerHTML = `
+    <div class="screen-title">Мои записи</div>
+    <div class="bookings-list">
+      ${items.map((b) => {
+        const status = b.status === "confirmed" ? "подтверждена" : "ждёт оплату";
+        const codeLine = b.status === "pending" && b.payment_code
+          ? `<div class="booking-code">Код: ${b.payment_code}</div>`
+          : "";
+        const cancelBtn = b.status === "pending"
+          ? `<button type="button" class="cancel-booking-btn">Отменить</button>`
+          : "";
+        return `
+        <div class="booking-card ${b.status}">
+          <div class="booking-status">${status}</div>
+          <div class="booking-date">${b.date_label}, ${b.time}</div>
+          <div class="booking-meta">${b.haircut}, ${b.beard}</div>
+          <div class="booking-meta">${formatPrice(b.total)} · предоплата ${formatPrice(b.prepayment)}</div>
+          ${codeLine}
+          ${cancelBtn}
+        </div>`;
+      }).join("")}
+    </div>
+  `;
 }
 
 init();
