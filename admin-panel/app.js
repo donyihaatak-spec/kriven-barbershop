@@ -110,17 +110,17 @@ async function loadDashboard() {
       : "";
 
     return `
-      <div class="card">
+      <div class="card ${b.status}">
         <div class="card-top">
           <div>
             <div class="client">${b.full_name}</div>
-            <div class="meta">${username}</div>
+            <div class="handle">${username}</div>
           </div>
           <span class="badge ${b.status}">${statusLabel(b.status)}</span>
         </div>
-        <div class="meta">📅 ${b.date_label}, ${b.time}</div>
-        <div class="services">✂️ ${b.haircut} · 🧔 ${b.beard}</div>
-        <div class="money">Итого ${formatPrice(b.total)} · предоплата ${formatPrice(b.prepayment)} · в барбершопе ${formatPrice(b.rest)}</div>
+        <div class="row">📅 ${b.date_label}, ${b.time}</div>
+        <div class="row services">✂️ ${b.haircut} · 🧔 ${b.beard}</div>
+        <div class="row money">Итого ${formatPrice(b.total)} · предоплата ${formatPrice(b.prepayment)} · в барбершопе ${formatPrice(b.rest)}</div>
         ${b.payment_code ? `<div class="code">🔑 ${b.payment_code}</div>` : ""}
         ${actions}
       </div>
