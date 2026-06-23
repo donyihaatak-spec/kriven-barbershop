@@ -49,6 +49,11 @@ function setProgressVisible(visible) {
   if (progressBar) progressBar.classList.toggle("hidden", !visible);
 }
 
+function setTabsVisible(visible) {
+  if (tabsEl) tabsEl.classList.toggle("hidden", !visible);
+  document.querySelector(".app")?.classList.toggle("no-tabs", !visible);
+}
+
 function calcPrepayment(total) {
   const cfg = catalog?.config || {};
   const percent = cfg.prepayPercent ?? 50;
@@ -177,6 +182,7 @@ async function submitBooking() {
 
 function renderPendingScreen(message, paymentCode) {
   setProgressVisible(false);
+  setTabsVisible(false);
   setScreenHtml(`
     <div class="success-screen">
       <div class="success-title">Ждём оплату</div>
@@ -191,6 +197,7 @@ function renderPendingScreen(message, paymentCode) {
 
 async function renderMyBookingsScreen() {
   hideMainButton();
+  setTabsVisible(true);
   screen.innerHTML = `<div class="loading">Загрузка...</div>`;
 
   if (!tg?.initData) {
@@ -299,6 +306,7 @@ async function fetchBookedTimes(isoDate) {
 function renderDateScreen() {
   if (activeTab !== "book") return;
   updateProgress(0);
+  setTabsVisible(true);
   hideMainButton();
 
   const { today, max, closed } = getAvailableDates();
@@ -434,6 +442,7 @@ function renderBeardScreen() {
 
 function renderConfirmScreen() {
   updateProgress(4);
+  setTabsVisible(false);
   const hair = catalog.haircuts[booking.haircut];
   const beard = catalog.beards[booking.beard];
   const total = hair.price + beard.price;

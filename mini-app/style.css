@@ -456,6 +456,14 @@ body {
   backdrop-filter: blur(16px);
 }
 
+.tabs.hidden {
+  display: none;
+}
+
+.app.no-tabs {
+  padding-bottom: 20px;
+}
+
 .tab {
   flex: 1;
   padding: 13px 8px;
