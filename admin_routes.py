@@ -212,4 +212,4 @@ def register_admin_routes(app: web.Application) -> None:
     app.router.add_get("/api/admin/logs", handle_admin_logs)
     app.router.add_post("/api/admin/bookings/{booking_id}/confirm", handle_admin_confirm)
     app.router.add_post("/api/admin/bookings/{booking_id}/cancel", handle_admin_cancel)
-    app.router.add_static("/admin/assets", ADMIN_DIR, show_index=False, cache_max_age=0)
+    app.router.add_static("/admin/assets", ADMIN_DIR, show_index=False)
