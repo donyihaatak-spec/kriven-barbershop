@@ -2,8 +2,8 @@ const tg = window.Telegram?.WebApp;
 if (tg) {
   tg.ready();
   tg.expand();
-  tg.setHeaderColor("#050505");
-  tg.setBackgroundColor("#050505");
+  tg.setHeaderColor("#0c0c0c");
+  tg.setBackgroundColor("#0c0c0c");
 }
 
 const MONTHS = [
@@ -212,7 +212,7 @@ async function renderMyBookingsScreen() {
             ? `<div class="booking-code">Код: ${b.payment_code}</div>`
             : "";
           return `
-          <div class="booking-card">
+          <div class="booking-card ${b.status}">
             <div class="booking-status">${status}</div>
             <div class="booking-date">${b.date_label}, ${b.time}</div>
             <div class="booking-meta">${b.haircut}, ${b.beard}</div>
@@ -337,7 +337,7 @@ async function renderTimeScreen() {
   const html = `
     <button class="back-btn" id="backBtn">Назад</button>
     <div class="screen-title">Время</div>
-    <p style="color:var(--chrome-dim);font-size:0.85rem;margin-bottom:16px">${formatDateLabel(booking.date)}</p>
+    <p class="screen-sub">${formatDateLabel(booking.date)}</p>
     <div class="time-grid">
       ${slots.map((t) => {
         const taken = bookedTimes.includes(t);

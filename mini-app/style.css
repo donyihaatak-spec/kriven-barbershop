@@ -1,10 +1,14 @@
 :root {
-  --bg: #111;
-  --bg-card: #1a1a1a;
-  --text: #eee;
-  --muted: #999;
-  --border: #333;
-  --radius: 8px;
+  --bg: #0c0c0c;
+  --bg-card: #161616;
+  --bg-card-hover: #1c1c1c;
+  --text: #f0f0f0;
+  --muted: #8a8a8a;
+  --accent: #c8c8c8;
+  --border: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.22);
+  --radius: 12px;
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
 }
 
 * {
@@ -15,37 +19,54 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: "Manrope", -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
   font-size: 15px;
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
 .app {
   max-width: 480px;
   margin: 0 auto;
-  padding: 12px 12px 88px;
+  padding: 16px 16px 92px;
   min-height: 100vh;
 }
 
 .header {
   text-align: center;
-  margin-bottom: 20px;
-  padding-top: 4px;
+  margin-bottom: 28px;
+  padding: 8px 0 20px;
+  border-bottom: 1px solid var(--border);
 }
 
 .header h1 {
-  font-size: 1.1rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.tagline {
+  margin-top: 6px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 .screen-title {
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 600;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
+}
+
+.screen-sub {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: -8px 0 16px;
 }
 
 .loading,
@@ -53,38 +74,55 @@ body {
 .error-msg {
   text-align: center;
   color: var(--muted);
-  padding: 24px 8px;
+  padding: 32px 12px;
 }
 
 .error-msg {
-  color: #e55;
+  color: #e07070;
 }
 
 .back-btn {
-  display: inline-block;
-  margin-bottom: 12px;
-  padding: 4px 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 14px;
+  padding: 6px 0;
   background: none;
   border: none;
   color: var(--muted);
   font-size: 14px;
+  font-family: inherit;
   cursor: pointer;
+  transition: color 0.15s;
+}
+
+.back-btn:active {
+  color: var(--text);
 }
 
 .calendar-nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
+  font-weight: 600;
+  font-size: 0.95rem;
 }
 
 .calendar-nav button {
+  width: 40px;
+  height: 40px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   color: var(--text);
   border-radius: var(--radius);
-  padding: 8px 12px;
   cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.calendar-nav button:active {
+  background: var(--bg-card-hover);
+  border-color: var(--border-strong);
 }
 
 .calendar-grid {
@@ -95,35 +133,45 @@ body {
 
 .cal-head {
   text-align: center;
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 600;
   color: var(--muted);
-  padding: 4px 0;
+  padding: 6px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .cal-day {
   aspect-ratio: 1;
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
   border-radius: var(--radius);
   background: var(--bg-card);
   color: var(--text);
   font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
   cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+
+.cal-day.available:active {
+  transform: scale(0.96);
 }
 
 .cal-day.empty {
-  border-color: transparent;
   background: transparent;
   cursor: default;
 }
 
-.cal-day.available:hover,
-.cal-day.selected {
-  border-color: var(--text);
+.cal-day.available:hover {
+  border-color: var(--border-strong);
 }
 
 .cal-day.selected {
-  background: var(--text);
-  color: var(--bg);
+  background: var(--accent);
+  color: #111;
+  border-color: var(--accent);
+  box-shadow: var(--shadow);
 }
 
 .time-grid {
@@ -133,24 +181,31 @@ body {
 }
 
 .time-slot {
-  padding: 12px 8px;
+  padding: 13px 8px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--bg-card);
   color: var(--text);
   font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
   cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+
+.time-slot:not(.taken):active {
+  transform: scale(0.97);
 }
 
 .time-slot.taken {
-  opacity: 0.35;
+  opacity: 0.3;
   cursor: not-allowed;
 }
 
 .time-slot.selected {
-  background: var(--text);
-  color: var(--bg);
-  border-color: var(--text);
+  background: var(--accent);
+  color: #111;
+  border-color: var(--accent);
 }
 
 .service-list {
@@ -163,15 +218,22 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px;
+  gap: 12px;
+  padding: 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--bg-card);
   cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.service-card:active {
+  background: var(--bg-card-hover);
 }
 
 .service-card.selected {
-  border-color: var(--text);
+  border-color: var(--accent);
+  background: #1a1a1a;
 }
 
 .service-card .name {
@@ -181,20 +243,27 @@ body {
 .service-card .price {
   color: var(--muted);
   font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.service-card.selected .price {
+  color: var(--accent);
 }
 
 .summary {
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 14px;
-  margin-bottom: 14px;
+  padding: 16px;
+  margin-bottom: 12px;
   background: var(--bg-card);
 }
 
 .summary-row {
   display: flex;
   justify-content: space-between;
-  padding: 6px 0;
+  gap: 12px;
+  padding: 7px 0;
   font-size: 14px;
 }
 
@@ -205,21 +274,22 @@ body {
 .summary-total {
   display: flex;
   justify-content: space-between;
-  margin-top: 8px;
-  padding-top: 10px;
+  margin-top: 10px;
+  padding-top: 12px;
   border-top: 1px solid var(--border);
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 1rem;
 }
 
 .prepay-box {
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius);
-  padding: 14px;
-  margin-bottom: 14px;
-  background: var(--bg-card);
+  padding: 16px;
+  margin-bottom: 16px;
+  background: linear-gradient(180deg, #181818 0%, #141414 100%);
   font-size: 14px;
   color: var(--muted);
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
 .prepay-box strong {
@@ -229,49 +299,67 @@ body {
 
 .confirm-btn {
   width: 100%;
-  padding: 14px;
+  padding: 15px;
   border: none;
   border-radius: var(--radius);
-  background: var(--text);
-  color: var(--bg);
+  background: var(--accent);
+  color: #111;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
+  font-family: inherit;
   cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  letter-spacing: 0.02em;
+}
+
+.confirm-btn:active {
+  transform: scale(0.98);
+  opacity: 0.9;
 }
 
 .confirm-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
 }
 
 .success-screen {
-  padding: 16px 4px;
+  padding: 20px 8px;
+  text-align: center;
 }
 
 .success-title {
-  font-weight: 600;
-  margin-bottom: 12px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin-bottom: 14px;
 }
 
 .success-text {
   color: var(--muted);
   font-size: 14px;
   white-space: pre-line;
-  line-height: 1.5;
+  line-height: 1.55;
+  text-align: left;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-card);
 }
 
 .payment-code {
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin: 10px 0;
-  padding: 10px;
-  border: 1px solid var(--border);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  margin: 14px 0;
+  padding: 14px;
+  border: 1px dashed var(--border-strong);
   border-radius: var(--radius);
+  background: var(--bg-card);
 }
 
 .pending-hint {
-  margin-top: 12px;
+  margin-top: 14px;
   font-size: 13px;
   color: var(--muted);
+  line-height: 1.45;
 }
 
 .tabs {
@@ -283,27 +371,30 @@ body {
   margin: 0 auto;
   display: flex;
   gap: 8px;
-  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
-  background: var(--bg);
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  background: rgba(12, 12, 12, 0.92);
   border-top: 1px solid var(--border);
+  backdrop-filter: blur(12px);
 }
 
 .tab {
   flex: 1;
-  padding: 12px;
+  padding: 13px 8px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--bg-card);
   color: var(--muted);
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
   cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
 .tab.active {
-  background: var(--text);
-  color: var(--bg);
-  border-color: var(--text);
+  background: var(--accent);
+  color: #111;
+  border-color: var(--accent);
 }
 
 .bookings-list {
@@ -313,29 +404,47 @@ body {
 }
 
 .booking-card {
-  padding: 14px;
+  padding: 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--bg-card);
   font-size: 14px;
+  border-left: 3px solid var(--border-strong);
+}
+
+.booking-card.confirmed {
+  border-left-color: #6a9a6a;
+}
+
+.booking-card.pending {
+  border-left-color: #9a8a5a;
 }
 
 .booking-status {
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   color: var(--muted);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .booking-date {
   font-weight: 600;
+  font-size: 15px;
 }
 
 .booking-meta {
   color: var(--muted);
-  margin-top: 4px;
+  margin-top: 5px;
+  font-size: 13px;
 }
 
 .booking-code {
-  margin-top: 8px;
-  font-weight: 500;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  font-size: 13px;
 }
