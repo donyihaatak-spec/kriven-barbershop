@@ -575,6 +575,10 @@ function serviceLabel(haircutKey, beardKey) {
   return [hair?.name, beard?.name].filter(Boolean).join(", ");
 }
 
+function serviceTypeIcon(type) {
+  return window.KRIVEN_ICONS?.[type] || "";
+}
+
 function renderServiceTypeScreen() {
   if (activeTab !== "book") return;
   updateProgress(0);
@@ -586,11 +590,11 @@ function renderServiceTypeScreen() {
     <p class="screen-sub">Что тебе нужно?</p>
     <div class="type-choice-grid">
       <button type="button" class="type-choice" data-type="haircut">
-        <span class="type-icon">✂️</span>
+        <span class="type-icon">${serviceTypeIcon("haircut")}</span>
         <span class="type-label">Стрижка</span>
       </button>
       <button type="button" class="type-choice" data-type="beard">
-        <span class="type-icon">🧔</span>
+        <span class="type-icon">${serviceTypeIcon("beard")}</span>
         <span class="type-label">Борода</span>
       </button>
     </div>

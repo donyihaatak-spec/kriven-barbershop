@@ -360,7 +360,18 @@ body.demo-mode .logo-mark {
 }
 
 .type-icon {
-  font-size: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  color: var(--accent);
+}
+
+.choice-icon {
+  width: 40px;
+  height: 40px;
+  display: block;
 }
 
 .type-label {
