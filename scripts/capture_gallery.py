@@ -27,6 +27,7 @@ def wait_for_server(timeout: float = 15.0) -> None:
     raise RuntimeError(f"Server did not start on port {PORT}")
 
 MINI_APP_SHOTS = [
+    ("00-choice.png", "/?demo=choice", 390, 844),
     ("01-calendar.png", "/?demo=calendar", 390, 844),
     ("02-summary.png", "/?demo=summary", 390, 844),
     ("03-payment.png", "/?demo=payment", 390, 844),

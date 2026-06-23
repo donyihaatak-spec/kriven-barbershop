@@ -882,6 +882,10 @@ function runDemoScreen(name) {
   booking.beard = null;
 
   switch (name) {
+    case "choice":
+      setActiveTab("book");
+      renderServiceTypeScreen();
+      break;
     case "calendar":
       setActiveTab("book");
       renderDateScreen();
