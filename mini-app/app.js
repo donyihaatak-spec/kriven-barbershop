@@ -184,7 +184,7 @@ function renderPendingScreen(message, paymentCode) {
       <div class="success-text" id="successMsg"></div>
       <p class="pending-hint">После перевода подтвердим запись. Статус — в «Мои записи».</p>
     </div>
-  `;
+  `);
   const msgEl = document.getElementById("successMsg");
   if (msgEl) msgEl.textContent = message;
 }
@@ -400,7 +400,7 @@ function renderHairScreen() {
     <div class="service-list" id="hairList">
       ${renderServiceCards(catalog.haircuts, booking.haircut)}
     </div>
-  `;
+  `);
 
   document.getElementById("backBtn").onclick = renderTimeScreen;
   document.querySelectorAll("#hairList .service-card").forEach((card) => {
@@ -421,7 +421,7 @@ function renderBeardScreen() {
     <div class="service-list" id="beardList">
       ${renderServiceCards(catalog.beards, booking.beard)}
     </div>
-  `;
+  `);
 
   document.getElementById("backBtn").onclick = renderHairScreen;
   document.querySelectorAll("#beardList .service-card").forEach((card) => {
@@ -461,7 +461,7 @@ function renderConfirmScreen() {
       Код для комментария пришлём ниже.
     </div>
     <button type="button" class="confirm-btn" id="confirmBtn">Записаться</button>
-  `;
+  `);
 
   document.getElementById("backBtn").onclick = renderBeardScreen;
   document.getElementById("confirmBtn").onclick = submitBooking;
