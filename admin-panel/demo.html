@@ -6,71 +6,137 @@
   <title>KRIVEN Admin — demo</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/admin/assets/style.css?v=2" />
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/admin/assets/style.css?v=3" />
 </head>
 <body>
-  <div class="chrome-glow"></div>
-
-  <div id="appScreen" class="screen">
-    <header class="header">
-      <div>
-        <div class="logo">◈ KRIVEN</div>
-        <div class="subtitle">ADMIN PANEL</div>
+  <div class="admin-layout">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <button type="button" class="sidebar-toggle">☰</button>
+        <div>
+          <div class="logo-sm">KRIVEN</div>
+          <div class="subtitle-sm">Admin</div>
+        </div>
       </div>
-      <button type="button" class="ghost-btn">Выйти</button>
-    </header>
+      <nav class="sidebar-nav">
+        <div class="nav-section">Главное</div>
+        <button type="button" class="nav-item"><span class="nav-icon">▦</span><span class="nav-label">Панель управления</span></button>
+        <button type="button" class="nav-item active"><span class="nav-icon">📅</span><span class="nav-label">Бронирования</span></button>
+        <button type="button" class="nav-item"><span class="nav-icon">👤</span><span class="nav-label">Клиенты</span></button>
+        <button type="button" class="nav-item"><span class="nav-icon">✂️</span><span class="nav-label">Услуги</span></button>
+        <button type="button" class="nav-item"><span class="nav-icon">🧔</span><span class="nav-label">Барберы</span></button>
+        <div class="nav-section">Управление</div>
+        <button type="button" class="nav-item"><span class="nav-icon">⭐</span><span class="nav-label">Отзывы</span></button>
+        <button type="button" class="nav-item"><span class="nav-icon">🖼</span><span class="nav-label">Галерея</span></button>
+        <button type="button" class="nav-item"><span class="nav-icon">⚙</span><span class="nav-label">Настройки</span></button>
+        <button type="button" class="nav-item"><span class="nav-icon">👥</span><span class="nav-label">Пользователи</span></button>
+        <div class="nav-section">Система</div>
+        <button type="button" class="nav-item"><span class="nav-icon">📋</span><span class="nav-label">Логи</span></button>
+        <button type="button" class="nav-item nav-logout"><span class="nav-icon">⎋</span><span class="nav-label">Выход</span></button>
+      </nav>
+      <div class="sidebar-footer">KRIVEN Admin © 2026</div>
+    </aside>
 
-    <div class="stats">
-      <div class="stat-card"><div class="stat-value">2</div><div class="stat-label">Ждут оплату</div></div>
-      <div class="stat-card"><div class="stat-value">4</div><div class="stat-label">Сегодня всего</div></div>
-      <div class="stat-card"><div class="stat-value">3</div><div class="stat-label">Сегодня подтв.</div></div>
-      <div class="stat-card"><div class="stat-value">12</div><div class="stat-label">Предстоящие</div></div>
-    </div>
+    <div class="main-area">
+      <header class="topbar">
+        <div class="topbar-spacer"></div>
+        <button type="button" class="topbar-btn notify-btn">🔔<span class="notify-badge">3</span></button>
+        <div class="user-menu">
+          <div class="user-avatar">K</div>
+          <span class="user-name">kriven_admin</span>
+          <span class="user-caret">▾</span>
+        </div>
+      </header>
 
-    <div class="filters">
-      <button type="button" class="filter active">Ожидают оплату</button>
-      <button type="button" class="filter">Сегодня</button>
-      <button type="button" class="filter">Предстоящие</button>
-      <button type="button" class="filter">Все</button>
-    </div>
+      <main class="content">
+        <div class="page-head">
+          <h1 class="page-title">Бронирования</h1>
+          <div class="breadcrumb">Главная / Бронирования</div>
+        </div>
 
-    <div id="bookings" class="bookings">
-      <div class="card pending">
-        <div class="card-top">
-          <div>
-            <div class="client">Алексей</div>
-            <div class="handle">@alex_barber_client</div>
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-icon orange">📅</div>
+            <div><div class="stat-value">7</div><div class="stat-label">Ожидают подтверждения</div></div>
           </div>
-          <span class="badge pending">⏳ Ждёт оплату</span>
-        </div>
-        <div class="row">📅 Чт, 25 Июнь, 12:00</div>
-        <div class="row services">✂️ Фейд · 🧔 Контур + укладка</div>
-        <div class="row money">Итого 1 500 ₽ · предоплата 750 ₽ · в барбершопе 750 ₽</div>
-        <div class="code">🔑 KRV-E029</div>
-        <div class="actions">
-          <button type="button" class="btn-ok">✅ Оплата получена</button>
-          <button type="button" class="btn-no">❌ Отменить</button>
-        </div>
-      </div>
-
-      <div class="card pending">
-        <div class="card-top">
-          <div>
-            <div class="client">Дмитрий</div>
-            <div class="handle">@dmitry_h</div>
+          <div class="stat-card">
+            <div class="stat-icon blue">📆</div>
+            <div><div class="stat-value">12</div><div class="stat-label">На сегодня</div></div>
           </div>
-          <span class="badge pending">⏳ Ждёт оплату</span>
+          <div class="stat-card">
+            <div class="stat-icon green">📋</div>
+            <div><div class="stat-value">38</div><div class="stat-label">Ближайшие записи</div></div>
+          </div>
         </div>
-        <div class="row">📅 Пт, 26 Июнь, 16:30</div>
-        <div class="row services">✂️ Андеркат · 🧔 Опасное бритие</div>
-        <div class="row money">Итого 2 000 ₽ · предоплата 1 000 ₽ · в барбершопе 1 000 ₽</div>
-        <div class="code">🔑 KRV-6E66</div>
-        <div class="actions">
-          <button type="button" class="btn-ok">✅ Оплата получена</button>
-          <button type="button" class="btn-no">❌ Отменить</button>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2 class="panel-title">Список бронирований</h2>
+            <select class="status-select"><option>Все статусы</option></select>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th><th>Клиент</th><th>Контакт</th><th>Услуга</th><th>Барбер</th>
+                  <th>Дата и время</th><th>Статус</th><th>Действия</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>#1042</td>
+                  <td class="client-cell"><div class="name">Иван Петренко</div><div class="sub">KRV-E029</div></td>
+                  <td>@ivan_p</td>
+                  <td>Фейд + Контур</td>
+                  <td>KRIVEN</td>
+                  <td>Чт, 25 Июнь, 12:00</td>
+                  <td><span class="status-pill pending">Ждёт оплату</span></td>
+                  <td><div class="action-cell"><button class="btn-confirm">Подтвердить</button><button class="btn-more">▾</button></div></td>
+                </tr>
+                <tr>
+                  <td>#1041</td>
+                  <td class="client-cell"><div class="name">Дмитрий Смирнов</div><div class="sub">KRV-6E66</div></td>
+                  <td>@dmitry_h</td>
+                  <td>Андеркат + Бритие</td>
+                  <td>KRIVEN</td>
+                  <td>Пт, 26 Июнь, 16:30</td>
+                  <td><span class="status-pill pending">Ждёт оплату</span></td>
+                  <td><div class="action-cell"><button class="btn-confirm">Подтвердить</button><button class="btn-more">▾</button></div></td>
+                </tr>
+                <tr>
+                  <td>#1040</td>
+                  <td class="client-cell"><div class="name">Алексей Козлов</div><div class="sub">KRV-A1B2</div></td>
+                  <td>@alex_k</td>
+                  <td>Классика + Борода</td>
+                  <td>KRIVEN</td>
+                  <td>Сб, 27 Июнь, 11:00</td>
+                  <td><span class="status-pill pending">Ждёт оплату</span></td>
+                  <td><div class="action-cell"><button class="btn-confirm">Подтвердить</button><button class="btn-more">▾</button></div></td>
+                </tr>
+                <tr>
+                  <td>#1039</td>
+                  <td class="client-cell"><div class="name">Максим Орлов</div><div class="sub">KRV-C3D4</div></td>
+                  <td>@max_o</td>
+                  <td>Кроп + Контур</td>
+                  <td>KRIVEN</td>
+                  <td>Вс, 28 Июнь, 14:00</td>
+                  <td><span class="status-pill confirmed">Подтверждена</span></td>
+                  <td><div class="action-cell"><button class="btn-confirm" disabled>—</button></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="table-footer">
+            <span>Показано 1 — 4 из 4</span>
+            <div class="pagination">
+              <button class="page-btn" disabled>‹</button>
+              <button class="page-btn active">1</button>
+              <button class="page-btn" disabled>›</button>
+            </div>
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   </div>
 </body>
