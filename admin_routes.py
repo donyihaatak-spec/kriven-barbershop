@@ -6,6 +6,9 @@ from aiohttp import web
 
 from admin_auth import admin_auth_enabled, check_admin_password, create_admin_token, verify_admin_token
 from admin_service import (
+    add_admin_barber_api,
+    add_admin_service_api,
+    change_admin_password_api,
     create_gallery_item_api,
     create_review_api,
     get_admin_barbers_api,
@@ -17,6 +20,11 @@ from admin_service import (
     get_admin_services_api,
     get_admin_settings_api,
     get_admin_users_api,
+    save_admin_barber_api,
+    save_admin_service_api,
+    save_admin_settings_api,
+    update_gallery_item_api,
+    update_review_api,
 )
 from booking_service import (
     admin_cancel_booking,
@@ -104,6 +112,40 @@ async def handle_admin_services(request: web.Request) -> web.Response:
     return web.json_response({"ok": True, **get_admin_services_api()})
 
 
+async def handle_admin_service_update(request: web.Request) -> web.Response:
+    _require_admin(request)
+    kind = request.match_info["kind"]
+    key = request.match_info["key"]
+    body = await _read_json(request)
+    ok = save_admin_service_api(
+        kind,
+        key,
+        str(body.get("name", "")),
+        int(body.get("price", 0)),
+        str(body.get("emoji", "")),
+        bool(body.get("active", True)),
+    )
+    if not ok:
+        return web.json_response({"ok": False, "error": "Не удалось сохранить"}, status=400)
+    return web.json_response({"ok": True})
+
+
+async def handle_admin_service_create(request: web.Request) -> web.Response:
+    _require_admin(request)
+    kind = request.match_info["kind"]
+    body = await _read_json(request)
+    service_key = add_admin_service_api(
+        kind,
+        str(body.get("name", "")),
+        int(body.get("price", 0)),
+        str(body.get("emoji", "")),
+        body.get("key") or None,
+    )
+    if not service_key:
+        return web.json_response({"ok": False, "error": "Заполни название"}, status=400)
+    return web.json_response({"ok": True, "key": service_key})
+
+
 async def handle_admin_barbers(request: web.Request) -> web.Response:
     _require_admin(request)
     return web.json_response({"ok": True, "barbers": get_admin_barbers_api()})
@@ -162,6 +204,81 @@ async def handle_admin_settings(request: web.Request) -> web.Response:
     return web.json_response({"ok": True, "settings": get_admin_settings_api()})
 
 
+async def handle_admin_settings_update(request: web.Request) -> web.Response:
+    _require_admin(request)
+    body = await _read_json(request)
+    if not save_admin_settings_api(body):
+        return web.json_response({"ok": False, "error": "Не удалось сохранить"}, status=400)
+    return web.json_response({"ok": True, "settings": get_admin_settings_api()})
+
+
+async def handle_admin_password_change(request: web.Request) -> web.Response:
+    _require_admin(request)
+    body = await _read_json(request)
+    ok, error = change_admin_password_api(
+        str(body.get("current_password", "")),
+        str(body.get("new_password", "")),
+    )
+    if not ok:
+        return web.json_response({"ok": False, "error": error or "Ошибка"}, status=400)
+    return web.json_response({"ok": True})
+
+
+async def handle_admin_barber_update(request: web.Request) -> web.Response:
+    _require_admin(request)
+    barber_id = request.match_info["barber_id"]
+    body = await _read_json(request)
+    ok = save_admin_barber_api(
+        barber_id,
+        str(body.get("name", "")),
+        str(body.get("role", "")),
+        bool(body.get("active", True)),
+    )
+    if not ok:
+        return web.json_response({"ok": False, "error": "Не удалось сохранить"}, status=400)
+    return web.json_response({"ok": True})
+
+
+async def handle_admin_barber_create(request: web.Request) -> web.Response:
+    _require_admin(request)
+    body = await _read_json(request)
+    barber_id = add_admin_barber_api(
+        str(body.get("name", "")),
+        str(body.get("role", "")),
+        body.get("id") or None,
+    )
+    if not barber_id:
+        return web.json_response({"ok": False, "error": "Заполни имя"}, status=400)
+    return web.json_response({"ok": True, "id": barber_id})
+
+
+async def handle_admin_review_update(request: web.Request) -> web.Response:
+    _require_admin(request)
+    review_id = int(request.match_info["review_id"])
+    body = await _read_json(request)
+    if not update_review_api(
+        review_id,
+        str(body.get("author", "")),
+        str(body.get("text", "")),
+        int(body.get("rating", 5)),
+    ):
+        return web.json_response({"ok": False, "error": "Заполни имя и текст"}, status=400)
+    return web.json_response({"ok": True})
+
+
+async def handle_admin_gallery_update(request: web.Request) -> web.Response:
+    _require_admin(request)
+    item_id = int(request.match_info["item_id"])
+    body = await _read_json(request)
+    if not update_gallery_item_api(
+        item_id,
+        str(body.get("title", "")),
+        str(body.get("image_url", "")),
+    ):
+        return web.json_response({"ok": False, "error": "Заполни название и ссылку"}, status=400)
+    return web.json_response({"ok": True})
+
+
 async def handle_admin_users(request: web.Request) -> web.Response:
     _require_admin(request)
     return web.json_response({"ok": True, "users": get_admin_users_api()})
@@ -200,14 +317,22 @@ def register_admin_routes(app: web.Application) -> None:
     app.router.add_get("/api/admin/overview", handle_admin_overview)
     app.router.add_get("/api/admin/clients", handle_admin_clients)
     app.router.add_get("/api/admin/services", handle_admin_services)
+    app.router.add_put("/api/admin/services/{kind}/{key}", handle_admin_service_update)
+    app.router.add_post("/api/admin/services/{kind}", handle_admin_service_create)
     app.router.add_get("/api/admin/barbers", handle_admin_barbers)
+    app.router.add_put("/api/admin/barbers/{barber_id}", handle_admin_barber_update)
+    app.router.add_post("/api/admin/barbers", handle_admin_barber_create)
     app.router.add_get("/api/admin/reviews", handle_admin_reviews)
     app.router.add_post("/api/admin/reviews", handle_admin_review_create)
+    app.router.add_put("/api/admin/reviews/{review_id}", handle_admin_review_update)
     app.router.add_delete("/api/admin/reviews/{review_id}", handle_admin_review_delete)
     app.router.add_get("/api/admin/gallery", handle_admin_gallery)
     app.router.add_post("/api/admin/gallery", handle_admin_gallery_create)
+    app.router.add_put("/api/admin/gallery/{item_id}", handle_admin_gallery_update)
     app.router.add_delete("/api/admin/gallery/{item_id}", handle_admin_gallery_delete)
     app.router.add_get("/api/admin/settings", handle_admin_settings)
+    app.router.add_put("/api/admin/settings", handle_admin_settings_update)
+    app.router.add_put("/api/admin/password", handle_admin_password_change)
     app.router.add_get("/api/admin/users", handle_admin_users)
     app.router.add_get("/api/admin/logs", handle_admin_logs)
     app.router.add_post("/api/admin/bookings/{booking_id}/confirm", handle_admin_confirm)

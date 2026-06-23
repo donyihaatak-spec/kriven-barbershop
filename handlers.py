@@ -13,8 +13,9 @@ from booking_service import (
     user_cancelled_message,
     user_confirmed_message,
 )
-from catalog import BEARD_STYLES, HAIRCUT_STYLES
-from config import ADMIN_CHAT_ID, PREPAY_NAME, PREPAY_PHONE, public_webapp_url
+from catalog_store import get_beard_styles, get_haircut_styles
+from settings_store import get_admin_chat_id, get_prepay_name, get_prepay_phone
+from config import public_webapp_url
 from database import create_booking, get_booking_by_id, get_user_bookings
 from keyboards import (
     admin_payment_keyboard,
@@ -33,7 +34,7 @@ def _get_session(context: ContextTypes.DEFAULT_TYPE) -> dict:
 
 
 def _is_admin(user_id: int) -> bool:
-    return bool(ADMIN_CHAT_ID) and str(user_id) == str(ADMIN_CHAT_ID)
+    return bool(get_admin_chat_id()) and str(user_id) == str(get_admin_chat_id())
 
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -79,8 +80,8 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         else:
             lines = ["Твои записи:", ""]
             for b in bookings:
-                haircut = HAIRCUT_STYLES[b["haircut_key"]]["name"]
-                beard = BEARD_STYLES[b["beard_key"]]["name"]
+                haircut = get_haircut_styles().get(b["haircut_key"], {"name": b["haircut_key"]})["name"]
+                beard = get_beard_styles().get(b["beard_key"], {"name": b["beard_key"]})["name"]
                 status = b.get("status", "confirmed")
                 status_label = "⏳ ждёт оплату" if status == "pending" else "✅ подтверждена"
                 lines.append(
@@ -214,8 +215,8 @@ async def booking_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     if data.startswith("beard:"):
         session["beard"] = data.split(":", 1)[1]
-        haircut = HAIRCUT_STYLES[session["haircut"]]
-        beard = BEARD_STYLES[session["beard"]]
+        haircut = get_haircut_styles()[session["haircut"]]
+        beard = get_beard_styles()[session["beard"]]
         await query.edit_message_text(
             branding.confirmation(
                 format_date_label(session["date"]),
@@ -238,8 +239,8 @@ async def booking_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             )
             return
 
-        haircut = HAIRCUT_STYLES[session["haircut"]]
-        beard = BEARD_STYLES[session["beard"]]
+        haircut = get_haircut_styles()[session["haircut"]]
+        beard = get_beard_styles()[session["beard"]]
         total = haircut["price"] + beard["price"]
         prepay = calc_prepayment(total)
         user = query.from_user
@@ -275,12 +276,13 @@ async def booking_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             prepay,
             total - prepay,
             code,
-            PREPAY_PHONE,
-            PREPAY_NAME,
+            get_prepay_phone(),
+            get_prepay_name(),
         )
         await query.edit_message_text(pending_text, reply_markup=main_menu_keyboard())
 
-        if ADMIN_CHAT_ID and row:
+        admin_chat_id = get_admin_chat_id()
+        if admin_chat_id and row:
             payload = booking_payload_from_row(row)
             admin_text = admin_notification_text(
                 user.full_name or "—",
@@ -289,7 +291,7 @@ async def booking_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 source="Бот",
             )
             await context.bot.send_message(
-                chat_id=int(ADMIN_CHAT_ID),
+                chat_id=int(admin_chat_id),
                 text=admin_text,
                 reply_markup=admin_payment_keyboard(booking_id),
             )

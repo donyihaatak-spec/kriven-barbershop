@@ -1,5 +1,10 @@
 BRAND = "KRIVEN"
-SHOP_NAME = "KRIVEN BARBERS"
+
+
+def shop_name() -> str:
+    from settings_store import get_shop_name
+
+    return get_shop_name()
 
 DIVIDER = ""
 DIVIDER_THIN = ""
@@ -7,8 +12,8 @@ DIVIDER_THIN = ""
 
 def header(title: str = "") -> str:
     if title:
-        return f"◈ {SHOP_NAME}\n{title}"
-    return f"◈ {SHOP_NAME}"
+        return f"◈ {shop_name()}\n{title}"
+    return f"◈ {shop_name()}"
 
 
 def price_tag(amount: int) -> str:
@@ -18,7 +23,7 @@ def price_tag(amount: int) -> str:
 
 
 def welcome() -> str:
-    return f"{SHOP_NAME}\n\nЗапись онлайн — кнопка ниже."
+    return f"{shop_name()}\n\nЗапись онлайн — кнопка ниже."
 
 
 def pick_date() -> str:
@@ -120,7 +125,7 @@ def booking_reminder(
     beard_name: str,
 ) -> str:
     return (
-        f"Напоминание · {SHOP_NAME}\n\n"
+        f"Напоминание · {shop_name()}\n\n"
         f"Завтра: {date_label}, {time_label}\n"
         f"{haircut_name}, {beard_name}\n\n"
         "Ждём тебя."
@@ -149,14 +154,14 @@ def slot_taken() -> str:
 
 
 def price_list() -> str:
-    from catalog import BEARD_STYLES, HAIRCUT_STYLES
+    from catalog_store import get_beard_styles, get_haircut_styles
 
-    lines = [f"◈ {SHOP_NAME} — прайс", ""]
+    lines = [f"◈ {shop_name()} — прайс", ""]
     lines.append("✂️ Стрижки")
-    for item in HAIRCUT_STYLES.values():
+    for item in get_haircut_styles().values():
         lines.append(f"{item['name']} — {price_tag(item['price'])}")
     lines.append("")
     lines.append("🧔 Борода")
-    for item in BEARD_STYLES.values():
+    for item in get_beard_styles().values():
         lines.append(f"{item['name']} — {price_tag(item['price'])}")
     return "\n".join(lines)

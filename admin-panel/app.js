@@ -251,57 +251,185 @@ async function renderClients() {
     </div>`;
 }
 
+function escAttr(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;");
+}
+
+function serviceEditRow(kind, service) {
+  const inactive = service.active ? "" : " class=\"row-inactive\"";
+  return `<tr${inactive}>
+    <td><input type="text" class="svc-input svc-emoji" value="${escAttr(service.emoji)}" maxlength="4" title="Эмодзи" /></td>
+    <td><input type="text" class="svc-input svc-name" value="${escAttr(service.name)}" required /></td>
+    <td><code>${escAttr(service.key)}</code></td>
+    <td><input type="number" class="svc-input svc-price" value="${service.price}" min="0" step="50" /></td>
+    <td><label class="svc-toggle"><input type="checkbox" class="svc-active" ${service.active ? "checked" : ""} /> ${service.active ? "Вкл" : "Выкл"}</label></td>
+    <td><button type="button" class="btn-small btn-primary" data-save-service data-kind="${kind}" data-key="${escAttr(service.key)}">Сохранить</button></td>
+  </tr>`;
+}
+
+function bindServiceForms() {
+  document.querySelectorAll("[data-save-service]").forEach((btn) => {
+    btn.onclick = async () => {
+      const row = btn.closest("tr");
+      const { kind, key } = btn.dataset;
+      const { data: res } = await api(`/api/admin/services/${kind}/${encodeURIComponent(key)}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          emoji: row.querySelector(".svc-emoji")?.value.trim() || "",
+          name: row.querySelector(".svc-name")?.value.trim() || "",
+          price: Number(row.querySelector(".svc-price")?.value || 0),
+          active: row.querySelector(".svc-active")?.checked ?? true,
+        }),
+      });
+      if (res.ok) {
+        showToast("Услуга сохранена");
+        renderServices();
+      } else {
+        showToast(res.error || "Ошибка сохранения");
+      }
+    };
+  });
+
+  document.querySelectorAll(".svc-add-form").forEach((form) => {
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const kind = form.dataset.kind;
+      const fd = new FormData(form);
+      const { data: res } = await api(`/api/admin/services/${kind}`, {
+        method: "POST",
+        body: JSON.stringify({
+          emoji: String(fd.get("emoji") || "").trim(),
+          name: String(fd.get("name") || "").trim(),
+          price: Number(fd.get("price") || 0),
+        }),
+      });
+      if (res.ok) {
+        showToast("Услуга добавлена");
+        renderServices();
+      } else {
+        showToast(res.error || "Ошибка");
+      }
+    };
+  });
+}
+
 async function renderServices() {
   const { data } = await api("/api/admin/services");
   if (!data.ok) throw new Error();
 
-  const hairRows = data.haircuts.map((s) => `
-    <tr><td>${s.emoji} ${s.name}</td><td><code>${s.key}</code></td><td>${formatPrice(s.price)}</td></tr>
-  `).join("");
-
-  const beardRows = data.beards.map((s) => `
-    <tr><td>${s.emoji} ${s.name}</td><td><code>${s.key}</code></td><td>${formatPrice(s.price)}</td></tr>
-  `).join("");
+  const hairRows = data.haircuts.map((s) => serviceEditRow("haircut", s)).join("");
+  const beardRows = data.beards.map((s) => serviceEditRow("beard", s)).join("");
 
   appScreen.innerHTML = pageHead(PAGES.services.title, PAGES.services.crumb) + `
+    <p class="hint-block">Изменения сразу попадают в бота и Mini App. Снятая галочка «Вкл» скрывает услугу из записи, но старые брони сохраняются.</p>
     <div class="grid-2">
       <div class="panel">
         <div class="panel-head"><h2 class="panel-title">Стрижки</h2></div>
         <div class="table-wrap">
-          <table class="data-table"><thead><tr><th>Услуга</th><th>Код</th><th>Цена</th></tr></thead><tbody>${hairRows}</tbody></table>
+          <table class="data-table svc-table">
+            <thead><tr><th></th><th>Название</th><th>Код</th><th>Цена</th><th>Статус</th><th></th></tr></thead>
+            <tbody>${hairRows || `<tr><td colspan="6" class="empty-cell">Нет услуг</td></tr>`}</tbody>
+          </table>
         </div>
+        <form class="admin-form svc-add-form" data-kind="haircut">
+          <div class="svc-add-row">
+            <input type="text" name="emoji" placeholder="✂️" maxlength="4" />
+            <input type="text" name="name" placeholder="Название" required />
+            <input type="number" name="price" placeholder="Цена" min="0" step="50" required />
+            <button type="submit" class="btn-primary">Добавить</button>
+          </div>
+        </form>
       </div>
       <div class="panel">
         <div class="panel-head"><h2 class="panel-title">Борода</h2></div>
         <div class="table-wrap">
-          <table class="data-table"><thead><tr><th>Услуга</th><th>Код</th><th>Цена</th></tr></thead><tbody>${beardRows}</tbody></table>
+          <table class="data-table svc-table">
+            <thead><tr><th></th><th>Название</th><th>Код</th><th>Цена</th><th>Статус</th><th></th></tr></thead>
+            <tbody>${beardRows || `<tr><td colspan="6" class="empty-cell">Нет услуг</td></tr>`}</tbody>
+          </table>
         </div>
+        <form class="admin-form svc-add-form" data-kind="beard">
+          <div class="svc-add-row">
+            <input type="text" name="emoji" placeholder="🧔" maxlength="4" />
+            <input type="text" name="name" placeholder="Название" required />
+            <input type="number" name="price" placeholder="Цена" min="0" step="50" required />
+            <button type="submit" class="btn-primary">Добавить</button>
+          </div>
+        </form>
       </div>
-    </div>
-    <p class="hint-block">Изменение прайса — в файле <code>catalog.py</code> или через разработчика.</p>`;
+    </div>`;
+
+  bindServiceForms();
 }
 
 async function renderBarbers() {
   const { data } = await api("/api/admin/barbers");
   if (!data.ok) throw new Error();
 
-  const cards = data.barbers.map((b) => `
-    <div class="info-card">
-      <div class="info-card-top">
-        <div class="info-avatar">🧔</div>
-        <div>
-          <div class="info-title">${b.name}</div>
-          <div class="info-sub">${b.role}</div>
-        </div>
-        <span class="status-pill ${b.active ? "confirmed" : "cancelled"}">${b.active ? "Активен" : "Неактивен"}</span>
-      </div>
-      <div class="info-meta">ID: ${b.id}</div>
-    </div>
-  `).join("");
+  const rows = data.barbers.map((b) => {
+    const inactive = b.active ? "" : " class=\"row-inactive\"";
+    return `<tr${inactive}>
+      <td><input type="text" class="svc-input barber-name" value="${escAttr(b.name)}" required /></td>
+      <td><input type="text" class="svc-input barber-role" value="${escAttr(b.role)}" /></td>
+      <td><code>${escAttr(b.id)}</code></td>
+      <td><label class="svc-toggle"><input type="checkbox" class="barber-active" ${b.active ? "checked" : ""} /> ${b.active ? "Вкл" : "Выкл"}</label></td>
+      <td><button type="button" class="btn-small btn-primary" data-save-barber data-id="${escAttr(b.id)}">Сохранить</button></td>
+    </tr>`;
+  }).join("");
 
   appScreen.innerHTML = pageHead(PAGES.barbers.title, PAGES.barbers.crumb) + `
-    <div class="cards-grid">${cards}</div>
-    <p class="hint-block">Список мастеров настраивается в <code>config.py</code> → BARBERS.</p>`;
+    <p class="hint-block">Список мастеров для админки и отчётов. Изменения сохраняются в базе.</p>
+    <div class="panel">
+      <div class="panel-head"><h2 class="panel-title">Барберы</h2></div>
+      <div class="table-wrap">
+        <table class="data-table svc-table">
+          <thead><tr><th>Имя</th><th>Роль</th><th>ID</th><th>Статус</th><th></th></tr></thead>
+          <tbody>${rows || `<tr><td colspan="5" class="empty-cell">Нет барберов</td></tr>`}</tbody>
+        </table>
+      </div>
+      <form class="admin-form barber-add-form">
+        <div class="svc-add-row barber-add-row">
+          <input type="text" name="name" placeholder="Имя" required />
+          <input type="text" name="role" placeholder="Роль" />
+          <input type="text" name="id" placeholder="ID (необяз.)" />
+          <button type="submit" class="btn-primary">Добавить</button>
+        </div>
+      </form>
+    </div>`;
+
+  document.querySelectorAll("[data-save-barber]").forEach((btn) => {
+    btn.onclick = async () => {
+      const row = btn.closest("tr");
+      const { data: res } = await api(`/api/admin/barbers/${encodeURIComponent(btn.dataset.id)}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          name: row.querySelector(".barber-name")?.value.trim(),
+          role: row.querySelector(".barber-role")?.value.trim(),
+          active: row.querySelector(".barber-active")?.checked ?? true,
+        }),
+      });
+      if (res.ok) { showToast("Барбер сохранён"); renderBarbers(); }
+      else showToast(res.error || "Ошибка");
+    };
+  });
+
+  document.querySelector(".barber-add-form").onsubmit = async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const { data: res } = await api("/api/admin/barbers", {
+      method: "POST",
+      body: JSON.stringify({
+        name: String(fd.get("name") || "").trim(),
+        role: String(fd.get("role") || "").trim(),
+        id: String(fd.get("id") || "").trim() || undefined,
+      }),
+    });
+    if (res.ok) { showToast("Барбер добавлен"); renderBarbers(); }
+    else showToast(res.error || "Ошибка");
+  };
 }
 
 async function renderReviews() {
@@ -310,13 +438,21 @@ async function renderReviews() {
 
   const list = data.reviews.length
     ? data.reviews.map((r) => `
-      <div class="review-card">
+      <div class="review-card" data-review-id="${r.id}">
         <div class="review-top">
-          <div><strong>${r.author}</strong> <span class="stars">${"★".repeat(r.rating)}${"☆".repeat(5 - r.rating)}</span></div>
-          <button type="button" class="btn-text-danger" data-delete-review="${r.id}">Удалить</button>
+          <input type="text" class="svc-input review-author" value="${escAttr(r.author)}" />
+          <select class="review-rating">
+            ${[5, 4, 3, 2, 1].map((n) => `<option value="${n}" ${r.rating === n ? "selected" : ""}>${n} ★</option>`).join("")}
+          </select>
         </div>
-        <p class="review-text">${r.text}</p>
-        <div class="review-date">${formatDate(r.created_at)}</div>
+        <textarea class="svc-input review-text" rows="3">${escAttr(r.text)}</textarea>
+        <div class="review-actions">
+          <span class="review-date">${formatDate(r.created_at)}</span>
+          <div class="review-btns">
+            <button type="button" class="btn-small btn-primary" data-save-review="${r.id}">Сохранить</button>
+            <button type="button" class="btn-text-danger" data-delete-review="${r.id}">Удалить</button>
+          </div>
+        </div>
       </div>`).join("")
     : `<div class="empty-panel">Отзывов пока нет. Добавь первый ниже.</div>`;
 
@@ -351,6 +487,22 @@ async function renderReviews() {
     if (res.ok) { showToast("Отзыв добавлен"); renderReviews(); }
     else showToast(res.error || "Ошибка");
   };
+
+  document.querySelectorAll("[data-save-review]").forEach((btn) => {
+    btn.onclick = async () => {
+      const card = btn.closest("[data-review-id]");
+      const { data: res } = await api(`/api/admin/reviews/${btn.dataset.saveReview}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          author: card.querySelector(".review-author")?.value.trim(),
+          text: card.querySelector(".review-text")?.value.trim(),
+          rating: Number(card.querySelector(".review-rating")?.value || 5),
+        }),
+      });
+      if (res.ok) { showToast("Отзыв сохранён"); renderReviews(); }
+      else showToast(res.error || "Ошибка");
+    };
+  });
 }
 
 async function renderGallery() {
@@ -359,11 +511,15 @@ async function renderGallery() {
 
   const grid = data.items.length
     ? data.items.map((item) => `
-      <div class="gallery-card">
-        <img src="${item.image_url}" alt="${item.title}" loading="lazy" />
-        <div class="gallery-card-body">
-          <div class="gallery-title">${item.title}</div>
-          <button type="button" class="btn-text-danger" data-delete-gallery="${item.id}">Удалить</button>
+      <div class="gallery-card" data-gallery-id="${item.id}">
+        <img src="${escAttr(item.image_url)}" alt="${escAttr(item.title)}" loading="lazy" />
+        <div class="gallery-card-body gallery-edit-body">
+          <input type="text" class="svc-input gallery-title-input" value="${escAttr(item.title)}" />
+          <input type="url" class="svc-input gallery-url-input" value="${escAttr(item.image_url)}" />
+          <div class="gallery-btns">
+            <button type="button" class="btn-small btn-primary" data-save-gallery="${item.id}">Сохранить</button>
+            <button type="button" class="btn-text-danger" data-delete-gallery="${item.id}">Удалить</button>
+          </div>
         </div>
       </div>`).join("")
     : `<div class="empty-panel">Галерея пуста</div>`;
@@ -389,35 +545,87 @@ async function renderGallery() {
     if (res.ok) { showToast("Фото добавлено"); renderGallery(); }
     else showToast(res.error || "Ошибка");
   };
+
+  document.querySelectorAll("[data-save-gallery]").forEach((btn) => {
+    btn.onclick = async () => {
+      const card = btn.closest("[data-gallery-id]");
+      const { data: res } = await api(`/api/admin/gallery/${btn.dataset.saveGallery}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          title: card.querySelector(".gallery-title-input")?.value.trim(),
+          image_url: card.querySelector(".gallery-url-input")?.value.trim(),
+        }),
+      });
+      if (res.ok) { showToast("Фото сохранено"); renderGallery(); }
+      else showToast(res.error || "Ошибка");
+    };
+  });
 }
+
+const WEEKDAYS = [
+  { v: 0, label: "Пн" }, { v: 1, label: "Вт" }, { v: 2, label: "Ср" },
+  { v: 3, label: "Чт" }, { v: 4, label: "Пт" }, { v: 5, label: "Сб" }, { v: 6, label: "Вс" },
+];
 
 async function renderSettings() {
   const { data } = await api("/api/admin/settings");
   if (!data.ok) throw new Error();
   const s = data.settings;
+  const closed = s.closed_weekdays || [];
 
-  const rows = [
-    ["Салон", s.shop_name],
-    ["Предоплата %", s.prepay_percent + "%"],
-    ["Мин. предоплата", formatPrice(s.prepay_min)],
-    ["Телефон СБП", s.prepay_phone],
-    ["Получатель", s.prepay_name],
-    ["Часы работы", s.work_hours],
-    ["Слот", s.slot_minutes + " мин"],
-    ["Выходные", s.closed_days],
-    ["Запись вперёд", s.days_ahead + " дн."],
-    ["Напоминания", s.reminder_enabled ? `Да, в ${s.reminder_hour}:00` : "Нет"],
-    ["Admin Telegram ID", s.admin_chat_id],
-  ];
+  const dayChecks = WEEKDAYS.map((d) => `
+    <label class="day-check"><input type="checkbox" name="closed_weekdays" value="${d.v}" ${closed.includes(d.v) ? "checked" : ""} /> ${d.label}</label>
+  `).join("");
 
   appScreen.innerHTML = pageHead(PAGES.settings.title, PAGES.settings.crumb) + `
-    <div class="panel">
-      <div class="panel-head"><h2 class="panel-title">Текущие настройки</h2></div>
-      <div class="settings-list">
-        ${rows.map(([k, v]) => `<div class="settings-row"><span>${k}</span><strong>${v}</strong></div>`).join("")}
-      </div>
-    </div>
-    <p class="hint-block">Меняются через переменные Render и файлы <code>config.py</code> / <code>.env</code>.</p>`;
+    <p class="hint-block">Все настройки применяются сразу в боте и Mini App.</p>
+    <div class="panel form-panel">
+      <div class="panel-head"><h2 class="panel-title">Настройки салона</h2></div>
+      <form id="settingsForm" class="admin-form settings-form">
+        <label class="field-label">Название салона<input type="text" name="shop_name" value="${escAttr(s.shop_name)}" required /></label>
+        <div class="settings-grid-2">
+          <label class="field-label">Предоплата %<input type="number" name="prepay_percent" value="${s.prepay_percent}" min="0" max="100" /></label>
+          <label class="field-label">Мин. предоплата ₽<input type="number" name="prepay_min" value="${s.prepay_min}" min="0" step="50" /></label>
+          <label class="field-label">Телефон СБП<input type="text" name="prepay_phone" value="${escAttr(s.prepay_phone)}" /></label>
+          <label class="field-label">Получатель<input type="text" name="prepay_name" value="${escAttr(s.prepay_name)}" /></label>
+          <label class="field-label">Начало работы<input type="number" name="work_start_hour" value="${s.work_start_hour}" min="0" max="23" /></label>
+          <label class="field-label">Конец работы<input type="number" name="work_end_hour" value="${s.work_end_hour}" min="1" max="24" /></label>
+          <label class="field-label">Слот (мин)<input type="number" name="slot_minutes" value="${s.slot_minutes}" min="15" step="15" /></label>
+          <label class="field-label">Запись вперёд (дн)<input type="number" name="booking_days_ahead" value="${s.booking_days_ahead}" min="1" max="90" /></label>
+          <label class="field-label">Час напоминаний<input type="number" name="reminder_hour" value="${s.reminder_hour}" min="0" max="23" /></label>
+          <label class="field-label checkbox-field"><input type="checkbox" name="reminder_enabled" ${s.reminder_enabled ? "checked" : ""} /> Напоминания за день до визита</label>
+        </div>
+        <div class="field-label">Выходные дни<div class="days-row">${dayChecks}</div></div>
+        <label class="field-label">Admin Telegram ID<input type="text" name="admin_chat_id" value="${escAttr(s.admin_chat_id)}" placeholder="123456789" /></label>
+        <button type="submit" class="btn-primary">Сохранить настройки</button>
+      </form>
+    </div>`;
+
+  document.getElementById("settingsForm").onsubmit = async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const closedDays = [...e.target.querySelectorAll('input[name="closed_weekdays"]:checked')].map((cb) => Number(cb.value));
+    const { data: res } = await api("/api/admin/settings", {
+      method: "PUT",
+      body: JSON.stringify({
+        shop_name: fd.get("shop_name"),
+        prepay_percent: Number(fd.get("prepay_percent")),
+        prepay_min: Number(fd.get("prepay_min")),
+        prepay_phone: fd.get("prepay_phone"),
+        prepay_name: fd.get("prepay_name"),
+        work_start_hour: Number(fd.get("work_start_hour")),
+        work_end_hour: Number(fd.get("work_end_hour")),
+        slot_minutes: Number(fd.get("slot_minutes")),
+        booking_days_ahead: Number(fd.get("booking_days_ahead")),
+        reminder_hour: Number(fd.get("reminder_hour")),
+        reminder_enabled: fd.get("reminder_enabled") === "on",
+        closed_weekdays: closedDays,
+        admin_chat_id: fd.get("admin_chat_id"),
+      }),
+    });
+    if (res.ok) { showToast("Настройки сохранены"); renderSettings(); }
+    else showToast(res.error || "Ошибка");
+  };
 }
 
 async function renderUsers() {
@@ -443,7 +651,35 @@ async function renderUsers() {
         </table>
       </div>
     </div>
-    <p class="hint-block">Пароль админки — переменная <code>ADMIN_PASSWORD</code> в Render.</p>`;
+    <div class="panel form-panel">
+      <div class="panel-head"><h2 class="panel-title">Сменить пароль админки</h2></div>
+      <form id="passwordForm" class="admin-form">
+        <input type="password" name="current_password" placeholder="Текущий пароль" required autocomplete="current-password" />
+        <input type="password" name="new_password" placeholder="Новый пароль (мин. 4 символа)" required autocomplete="new-password" />
+        <button type="submit" class="btn-primary">Обновить пароль</button>
+      </form>
+      <p class="hint-block">Telegram ID меняется в разделе «Настройки». После смены пароля нужно войти заново.</p>
+    </div>`;
+
+  document.getElementById("passwordForm").onsubmit = async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const { data: res } = await api("/api/admin/password", {
+      method: "PUT",
+      body: JSON.stringify({
+        current_password: fd.get("current_password"),
+        new_password: fd.get("new_password"),
+      }),
+    });
+    if (res.ok) {
+      showToast("Пароль обновлён — войди снова");
+      token = "";
+      localStorage.removeItem(TOKEN_KEY);
+      setTimeout(showLogin, 1200);
+    } else {
+      showToast(res.error || "Ошибка");
+    }
+  };
 }
 
 async function renderLogs() {

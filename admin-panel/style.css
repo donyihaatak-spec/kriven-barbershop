@@ -792,6 +792,168 @@ body {
   cursor: pointer;
 }
 
+.svc-table .svc-input {
+  width: 100%;
+  min-width: 48px;
+  padding: 7px 9px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.85rem;
+}
+
+.svc-table .svc-emoji {
+  max-width: 52px;
+  text-align: center;
+}
+
+.svc-table .svc-price {
+  max-width: 96px;
+}
+
+.svc-table .row-inactive {
+  opacity: 0.55;
+}
+
+.svc-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.svc-add-row {
+  display: grid;
+  grid-template-columns: 52px 1fr 100px auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.svc-add-row input {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+.empty-cell {
+  text-align: center;
+  color: var(--muted);
+  padding: 20px !important;
+}
+
+.barber-add-row {
+  grid-template-columns: 1fr 1fr 120px auto;
+}
+
+.settings-form .field-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.settings-form input[type="text"],
+.settings-form input[type="number"] {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+.settings-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.days-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.day-check {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.checkbox-field {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px !important;
+  color: var(--text) !important;
+}
+
+.review-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.review-btns,
+.gallery-btns {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.gallery-edit-body {
+  flex-direction: column;
+  align-items: stretch !important;
+  gap: 8px;
+}
+
+.review-card .review-text {
+  width: 100%;
+  resize: vertical;
+  min-height: 72px;
+}
+
+.review-top {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.review-author {
+  flex: 1;
+}
+
+.review-rating {
+  padding: 7px 9px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.btn-small {
+  padding: 7px 12px;
+  font-size: 0.78rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
 .btn-text-danger {
   background: none;
   border: none;

@@ -17,7 +17,8 @@ from booking_service import (
     user_cancel_booking_api,
     user_self_cancel_message,
 )
-from config import ADMIN_CHAT_ID, BOT_TOKEN
+from config import BOT_TOKEN
+from settings_store import get_admin_chat_id
 from keyboards import admin_payment_keyboard_api
 from telegram_auth import validate_webapp_init_data
 from telegram_notify import send_telegram_message
@@ -70,7 +71,8 @@ async def handle_book(request: web.Request) -> web.Response:
 
     if ok and payload:
         await send_telegram_message(user["id"], text)
-        if ADMIN_CHAT_ID:
+        admin_chat_id = get_admin_chat_id()
+        if admin_chat_id:
             admin_text = admin_notification_text(
                 f"{user.get('first_name', '')} {user.get('last_name', '')}".strip() or "—",
                 user.get("username"),
@@ -78,7 +80,7 @@ async def handle_book(request: web.Request) -> web.Response:
                 source="Mini App",
             )
             await send_telegram_message(
-                ADMIN_CHAT_ID,
+                admin_chat_id,
                 admin_text,
                 reply_markup=admin_payment_keyboard_api(payload["booking_id"]),
             )
@@ -158,9 +160,10 @@ async def handle_cancel_booking(request: web.Request) -> web.Response:
         return web.json_response({"ok": False, "error": "Не удалось отменить запись"}, status=400)
 
     await send_telegram_message(int(user["id"]), user_self_cancel_message(payload))
-    if ADMIN_CHAT_ID:
+    admin_chat_id = get_admin_chat_id()
+    if admin_chat_id:
         await send_telegram_message(
-            ADMIN_CHAT_ID,
+            admin_chat_id,
             admin_user_cancelled_text(
                 payload,
                 f"{user.get('first_name', '')} {user.get('last_name', '')}".strip() or "—",

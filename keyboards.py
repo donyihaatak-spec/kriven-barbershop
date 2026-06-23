@@ -4,8 +4,15 @@ from datetime import date, datetime, timedelta
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 
 import config
-from catalog import BEARD_STYLES, HAIRCUT_STYLES, MONTH_NAMES, WEEKDAY_SHORT
-from config import BOOKING_DAYS_AHEAD, CLOSED_WEEKDAYS, SLOT_MINUTES, WORK_END_HOUR, WORK_START_HOUR
+from catalog import MONTH_NAMES, WEEKDAY_SHORT
+from catalog_store import get_beard_styles, get_haircut_styles
+from settings_store import (
+    get_booking_days_ahead,
+    get_closed_weekdays,
+    get_slot_minutes,
+    get_work_end_hour,
+    get_work_start_hour,
+)
 from database import is_slot_taken
 
 
@@ -57,14 +64,14 @@ def admin_payment_keyboard_api(booking_id: int) -> dict:
 def _date_in_range(day: date, today: date, max_date: date) -> bool:
     if day < today or day > max_date:
         return False
-    if day.weekday() in CLOSED_WEEKDAYS:
+    if day.weekday() in get_closed_weekdays():
         return False
     return True
 
 
 def calendar_keyboard(year: int, month: int) -> InlineKeyboardMarkup:
     today = date.today()
-    max_date = today + timedelta(days=BOOKING_DAYS_AHEAD)
+    max_date = today + timedelta(days=get_booking_days_ahead())
 
     cal = calendar.Calendar(firstweekday=0)
     month_days = cal.monthdayscalendar(year, month)
@@ -145,19 +152,19 @@ def time_slots_keyboard(booking_date: str) -> InlineKeyboardMarkup:
     rows: list[list[InlineKeyboardButton]] = []
     row: list[InlineKeyboardButton] = []
 
-    start = datetime.strptime(f"{booking_date} {WORK_START_HOUR:02d}:00", "%Y-%m-%d %H:%M")
-    end = datetime.strptime(f"{booking_date} {WORK_END_HOUR:02d}:00", "%Y-%m-%d %H:%M")
+    start = datetime.strptime(f"{booking_date} {get_work_start_hour():02d}:00", "%Y-%m-%d %H:%M")
+    end = datetime.strptime(f"{booking_date} {get_work_end_hour():02d}:00", "%Y-%m-%d %H:%M")
     now = datetime.now()
 
     current = start
     while current < end:
         time_label = current.strftime("%H:%M")
         if booking_date == date.today().isoformat() and current <= now:
-            current += timedelta(minutes=SLOT_MINUTES)
+            current += timedelta(minutes=get_slot_minutes())
             continue
 
         if is_slot_taken(booking_date, time_label):
-            current += timedelta(minutes=SLOT_MINUTES)
+            current += timedelta(minutes=get_slot_minutes())
             continue
 
         row.append(
@@ -169,7 +176,7 @@ def time_slots_keyboard(booking_date: str) -> InlineKeyboardMarkup:
         if len(row) == 3:
             rows.append(row)
             row = []
-        current += timedelta(minutes=SLOT_MINUTES)
+        current += timedelta(minutes=get_slot_minutes())
 
     if row:
         rows.append(row)
@@ -185,7 +192,7 @@ def time_slots_keyboard(booking_date: str) -> InlineKeyboardMarkup:
 
 def haircut_keyboard() -> InlineKeyboardMarkup:
     rows: list[list[InlineKeyboardButton]] = []
-    for key, item in HAIRCUT_STYLES.items():
+    for key, item in get_haircut_styles().items():
         rows.append(
             [
                 InlineKeyboardButton(
@@ -200,7 +207,7 @@ def haircut_keyboard() -> InlineKeyboardMarkup:
 
 def beard_keyboard() -> InlineKeyboardMarkup:
     rows: list[list[InlineKeyboardButton]] = []
-    for key, item in BEARD_STYLES.items():
+    for key, item in get_beard_styles().items():
         price = "0 ₽" if item["price"] == 0 else f"{item['price']} ₽"
         rows.append(
             [

@@ -5,7 +5,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from booking_service import admin_notification_text, submit_booking
-from config import ADMIN_CHAT_ID
+from settings_store import get_admin_chat_id
 from keyboards import admin_payment_keyboard, main_menu_keyboard
 
 logger = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ async def webapp_data_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     await message.reply_text(text, reply_markup=main_menu_keyboard())
 
-    if ok and payload and ADMIN_CHAT_ID:
+    if ok and payload and get_admin_chat_id():
         admin_text = admin_notification_text(
             user.full_name or "—",
             user.username,
@@ -51,7 +51,7 @@ async def webapp_data_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
             source="Mini App",
         )
         await context.bot.send_message(
-            chat_id=int(ADMIN_CHAT_ID),
+            chat_id=int(get_admin_chat_id()),
             text=admin_text,
             reply_markup=admin_payment_keyboard(payload["booking_id"]),
         )

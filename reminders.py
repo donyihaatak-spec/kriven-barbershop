@@ -4,7 +4,7 @@ from datetime import date, datetime, timedelta
 
 from branding import booking_reminder
 from booking_service import booking_payload_from_row
-from config import REMINDER_ENABLED, REMINDER_HOUR
+from settings_store import get_reminder_enabled, get_reminder_hour
 from database import get_bookings_for_reminder, mark_reminder_sent
 from telegram_notify import send_telegram_message
 
@@ -12,11 +12,11 @@ logger = logging.getLogger(__name__)
 
 
 async def process_reminders() -> None:
-    if not REMINDER_ENABLED:
+    if not get_reminder_enabled():
         return
 
     now = datetime.now()
-    if now.hour < REMINDER_HOUR:
+    if now.hour < get_reminder_hour():
         return
 
     tomorrow = (date.today() + timedelta(days=1)).isoformat()

@@ -3,9 +3,20 @@ from typing import Any
 
 from datetime import date
 
-from catalog import BEARD_STYLES, HAIRCUT_STYLES
-from config import PREPAY_MIN, PREPAY_NAME, PREPAY_PERCENT, PREPAY_PHONE, KWORK_URL, SALES_CONTACT_URL, SALES_MODE
-from config import BOOKING_DAYS_AHEAD, CLOSED_WEEKDAYS, SLOT_MINUTES, WORK_END_HOUR, WORK_START_HOUR
+from catalog_store import get_beard_styles, get_haircut_styles
+from config import KWORK_URL, SALES_CONTACT_URL, SALES_MODE
+from settings_store import (
+    get_booking_days_ahead,
+    get_closed_weekdays,
+    get_prepay_min,
+    get_prepay_name,
+    get_prepay_percent,
+    get_prepay_phone,
+    get_shop_name,
+    get_slot_minutes,
+    get_work_end_hour,
+    get_work_start_hour,
+)
 from database import (
     STATUS_CANCELLED,
     STATUS_CONFIRMED,
@@ -30,13 +41,13 @@ import branding
 def calc_prepayment(total: int) -> int:
     if total <= 0:
         return 0
-    amount = max(PREPAY_MIN, round(total * PREPAY_PERCENT / 100))
+    amount = max(get_prepay_min(), round(total * get_prepay_percent() / 100))
     return min(amount, total)
 
 
 def booking_payload_from_row(row: dict) -> dict[str, Any]:
-    haircut = HAIRCUT_STYLES.get(row["haircut_key"], {"name": row["haircut_key"]})
-    beard = BEARD_STYLES.get(row["beard_key"], {"name": row["beard_key"]})
+    haircut = get_haircut_styles().get(row["haircut_key"], {"name": row["haircut_key"], "price": 0})
+    beard = get_beard_styles().get(row["beard_key"], {"name": row["beard_key"], "price": 0})
     total = row["total_price"]
     prepay = row.get("prepayment_amount") or calc_prepayment(total)
     return {
@@ -137,11 +148,13 @@ def submit_booking(
     haircut_key: str,
     beard_key: str,
 ) -> tuple[bool, str, dict[str, Any] | None]:
-    if haircut_key not in HAIRCUT_STYLES or beard_key not in BEARD_STYLES:
+    haircuts = get_haircut_styles()
+    beards = get_beard_styles()
+    if haircut_key not in haircuts or beard_key not in beards:
         return False, "Неверные услуги", None
 
-    haircut = HAIRCUT_STYLES[haircut_key]
-    beard = BEARD_STYLES[beard_key]
+    haircut = haircuts[haircut_key]
+    beard = beards[beard_key]
     total = haircut["price"] + beard["price"]
     prepay = calc_prepayment(total)
 
@@ -175,8 +188,8 @@ def submit_booking(
         prepay,
         total - prepay,
         payload["payment_code"],
-        PREPAY_PHONE,
-        PREPAY_NAME,
+        get_prepay_phone(),
+        get_prepay_name(),
     )
     return True, message, payload
 
@@ -274,18 +287,19 @@ def admin_notification_text(
 def catalog_for_webapp() -> str:
     return json.dumps(
         {
-            "haircuts": HAIRCUT_STYLES,
-            "beards": BEARD_STYLES,
+            "haircuts": get_haircut_styles(),
+            "beards": get_beard_styles(),
             "config": {
-                "workStart": WORK_START_HOUR,
-                "workEnd": WORK_END_HOUR,
-                "slotMinutes": SLOT_MINUTES,
-                "closedWeekdays": sorted(CLOSED_WEEKDAYS),
-                "daysAhead": BOOKING_DAYS_AHEAD,
-                "prepayPercent": PREPAY_PERCENT,
-                "prepayMin": PREPAY_MIN,
-                "prepayPhone": PREPAY_PHONE,
-                "prepayName": PREPAY_NAME,
+                "shopName": get_shop_name(),
+                "workStart": get_work_start_hour(),
+                "workEnd": get_work_end_hour(),
+                "slotMinutes": get_slot_minutes(),
+                "closedWeekdays": sorted(get_closed_weekdays()),
+                "daysAhead": get_booking_days_ahead(),
+                "prepayPercent": get_prepay_percent(),
+                "prepayMin": get_prepay_min(),
+                "prepayPhone": get_prepay_phone(),
+                "prepayName": get_prepay_name(),
                 "salesMode": SALES_MODE,
                 "salesContactUrl": SALES_CONTACT_URL,
                 "kworkUrl": KWORK_URL,

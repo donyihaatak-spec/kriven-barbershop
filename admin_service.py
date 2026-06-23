@@ -3,22 +3,20 @@ from __future__ import annotations
 
 from datetime import date
 
-import branding
-from catalog import BEARD_STYLES, HAIRCUT_STYLES
-from config import (
-    ADMIN_CHAT_ID,
-    BARBERS,
-    BOOKING_DAYS_AHEAD,
-    CLOSED_WEEKDAYS,
-    PREPAY_MIN,
-    PREPAY_NAME,
-    PREPAY_PERCENT,
-    PREPAY_PHONE,
-    REMINDER_ENABLED,
-    REMINDER_HOUR,
-    SLOT_MINUTES,
-    WORK_END_HOUR,
-    WORK_START_HOUR,
+from catalog_store import (
+    create_service,
+    get_all_services_admin,
+    set_service_active,
+    upsert_service,
+)
+from settings_store import (
+    change_admin_password,
+    create_barber,
+    get_admin_chat_id,
+    get_all_barbers_admin,
+    get_all_settings_admin,
+    save_settings_admin,
+    upsert_barber,
 )
 from database import (
     add_gallery_item,
@@ -31,6 +29,8 @@ from database import (
     get_admin_stats,
     get_gallery_items,
     get_reviews,
+    update_gallery_item,
+    update_review,
 )
 from booking_service import format_admin_booking, get_admin_dashboard_api
 from keyboards import format_date_label
@@ -64,19 +64,46 @@ def get_admin_clients_api() -> list[dict]:
 
 
 def get_admin_services_api() -> dict:
-    haircuts = [
-        {"key": key, "name": item["name"], "price": item["price"], "emoji": item.get("emoji", "")}
-        for key, item in HAIRCUT_STYLES.items()
-    ]
-    beards = [
-        {"key": key, "name": item["name"], "price": item["price"], "emoji": item.get("emoji", "")}
-        for key, item in BEARD_STYLES.items()
-    ]
+    haircuts = get_all_services_admin("haircut")
+    beards = get_all_services_admin("beard")
     return {"haircuts": haircuts, "beards": beards}
 
 
+def save_admin_service_api(
+    kind: str,
+    key: str,
+    name: str,
+    price: int,
+    emoji: str = "",
+    active: bool = True,
+) -> bool:
+    return upsert_service(kind, key, name, price, emoji, active)
+
+
+def add_admin_service_api(
+    kind: str,
+    name: str,
+    price: int,
+    emoji: str = "",
+    key: str | None = None,
+) -> str | None:
+    return create_service(kind, name, price, emoji, key)
+
+
+def toggle_admin_service_api(kind: str, key: str, active: bool) -> bool:
+    return set_service_active(kind, key, active)
+
+
 def get_admin_barbers_api() -> list[dict]:
-    return BARBERS
+    return get_all_barbers_admin()
+
+
+def save_admin_barber_api(barber_id: str, name: str, role: str, active: bool) -> bool:
+    return upsert_barber(barber_id, name, role, active)
+
+
+def add_admin_barber_api(name: str, role: str = "", barber_id: str | None = None) -> str | None:
+    return create_barber(name, role, barber_id)
 
 
 def get_admin_reviews_api() -> list[dict]:
@@ -105,30 +132,29 @@ def get_admin_gallery_api() -> list[dict]:
 
 
 def get_admin_settings_api() -> dict:
-    closed = ", ".join(WEEKDAY_NAMES[d] for d in sorted(CLOSED_WEEKDAYS))
-    return {
-        "shop_name": branding.SHOP_NAME,
-        "prepay_percent": PREPAY_PERCENT,
-        "prepay_min": PREPAY_MIN,
-        "prepay_phone": PREPAY_PHONE,
-        "prepay_name": PREPAY_NAME,
-        "work_hours": f"{WORK_START_HOUR}:00 – {WORK_END_HOUR}:00",
-        "slot_minutes": SLOT_MINUTES,
-        "closed_days": closed or "нет",
-        "days_ahead": BOOKING_DAYS_AHEAD,
-        "reminder_enabled": REMINDER_ENABLED,
-        "reminder_hour": REMINDER_HOUR,
-        "admin_chat_id": ADMIN_CHAT_ID or "не задан",
-    }
+    settings = get_all_settings_admin()
+    closed = ", ".join(WEEKDAY_NAMES[d] for d in settings["closed_weekdays"])
+    settings["closed_days"] = closed or "нет"
+    settings["work_hours"] = f"{settings['work_start_hour']}:00 – {settings['work_end_hour']}:00"
+    return settings
+
+
+def save_admin_settings_api(data: dict) -> bool:
+    return save_settings_admin(data)
+
+
+def change_admin_password_api(current: str, new_password: str) -> tuple[bool, str]:
+    return change_admin_password(current, new_password)
 
 
 def get_admin_users_api() -> list[dict]:
+    chat_id = get_admin_chat_id()
     return [
         {
             "id": "kriven_admin",
             "name": "kriven_admin",
             "role": "Владелец",
-            "telegram_id": ADMIN_CHAT_ID or "—",
+            "telegram_id": chat_id or "—",
         }
     ]
 
@@ -178,3 +204,24 @@ def create_gallery_item_api(title: str, image_url: str) -> int | None:
     if not title or not image_url:
         return None
     return add_gallery_item(title, image_url)
+
+
+def update_review_api(review_id: int, author: str, text: str, rating: int = 5) -> bool:
+    author = author.strip()
+    text = text.strip()
+    if not author or not text:
+        return False
+    try:
+        rating = int(rating)
+    except (TypeError, ValueError):
+        rating = 5
+    rating = max(1, min(5, rating))
+    return update_review(review_id, author, text, rating)
+
+
+def update_gallery_item_api(item_id: int, title: str, image_url: str) -> bool:
+    title = title.strip()
+    image_url = image_url.strip()
+    if not title or not image_url:
+        return False
+    return update_gallery_item(item_id, title, image_url)

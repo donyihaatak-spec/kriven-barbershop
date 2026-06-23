@@ -73,6 +73,13 @@ def init_db() -> None:
             """
         )
         _migrate(conn)
+        from catalog_store import init_catalog_table, seed_catalog_defaults
+        from settings_store import init_settings_tables, seed_settings_defaults
+
+        init_catalog_table(conn)
+        seed_catalog_defaults(conn)
+        init_settings_tables(conn)
+        seed_settings_defaults(conn)
         _seed_gallery(conn)
 
 
@@ -420,6 +427,15 @@ def delete_review(review_id: int) -> bool:
         return conn.total_changes > 0
 
 
+def update_review(review_id: int, author: str, text: str, rating: int) -> bool:
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute(
+            "UPDATE reviews SET author = ?, text = ?, rating = ? WHERE id = ?",
+            (author, text, rating, review_id),
+        )
+        return conn.total_changes > 0
+
+
 def get_gallery_items() -> list[dict]:
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
@@ -444,4 +460,13 @@ def add_gallery_item(title: str, image_url: str) -> int:
 def delete_gallery_item(item_id: int) -> bool:
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute("DELETE FROM gallery_items WHERE id = ?", (item_id,))
+        return conn.total_changes > 0
+
+
+def update_gallery_item(item_id: int, title: str, image_url: str) -> bool:
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute(
+            "UPDATE gallery_items SET title = ?, image_url = ? WHERE id = ?",
+            (title, image_url, item_id),
+        )
         return conn.total_changes > 0
