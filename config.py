@@ -39,3 +39,13 @@ CLOSED_WEEKDAYS: set[int] = {6}
 
 # Сколько дней вперёд можно записаться
 BOOKING_DAYS_AHEAD = 30
+
+# Барберы салона (для админки)
+BARBERS = [
+    {
+        "id": "kriven",
+        "name": "KRIVEN",
+        "role": "Топ-мастер",
+        "active": True,
+    },
+]

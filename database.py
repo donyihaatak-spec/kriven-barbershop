@@ -25,6 +25,28 @@ def _migrate(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE bookings ADD COLUMN payment_code TEXT")
     if "reminder_sent" not in cols:
         conn.execute("ALTER TABLE bookings ADD COLUMN reminder_sent INTEGER NOT NULL DEFAULT 0")
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS reviews (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            author TEXT NOT NULL,
+            text TEXT NOT NULL,
+            rating INTEGER NOT NULL DEFAULT 5,
+            created_at TEXT NOT NULL,
+            published INTEGER NOT NULL DEFAULT 1
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS gallery_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            image_url TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+        """
+    )
 
 
 def init_db() -> None:
@@ -51,6 +73,28 @@ def init_db() -> None:
             """
         )
         _migrate(conn)
+        _seed_gallery(conn)
+
+
+def _seed_gallery(conn: sqlite3.Connection) -> None:
+    count = conn.execute("SELECT COUNT(*) FROM gallery_items").fetchone()[0]
+    if count:
+        return
+    now = datetime.now().isoformat()
+    conn.execute(
+        """
+        INSERT INTO gallery_items (title, image_url, created_at)
+        VALUES (?, ?, ?), (?, ?, ?)
+        """,
+        (
+            "KRIVEN BARBERS",
+            "/admin/assets/icon.png",
+            now,
+            "Интерьер",
+            "/admin/assets/icon.png",
+            now,
+        ),
+    )
 
 
 def generate_payment_code() -> str:
@@ -308,3 +352,96 @@ def get_admin_stats() -> dict:
         "today_confirmed": today_confirmed,
         "upcoming_confirmed": upcoming,
     }
+
+
+def get_admin_clients() -> list[dict]:
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            """
+            SELECT
+                user_id,
+                MAX(full_name) AS full_name,
+                MAX(username) AS username,
+                COUNT(*) AS bookings_count,
+                SUM(CASE WHEN status = 'confirmed' THEN 1 ELSE 0 END) AS confirmed_count,
+                MAX(created_at) AS last_booking
+            FROM bookings
+            WHERE status != ?
+            GROUP BY user_id
+            ORDER BY last_booking DESC
+            LIMIT 200
+            """,
+            (STATUS_CANCELLED,),
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def get_admin_logs(limit: int = 50) -> list[dict]:
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            """
+            SELECT id, full_name, username, status, created_at,
+                   booking_date, booking_time, payment_code, total_price
+            FROM bookings
+            ORDER BY created_at DESC
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def get_reviews() -> list[dict]:
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            "SELECT * FROM reviews ORDER BY created_at DESC LIMIT 100"
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def add_review(author: str, text: str, rating: int) -> int:
+    with sqlite3.connect(DB_PATH) as conn:
+        cur = conn.execute(
+            """
+            INSERT INTO reviews (author, text, rating, created_at, published)
+            VALUES (?, ?, ?, ?, 1)
+            """,
+            (author, text, rating, datetime.now().isoformat()),
+        )
+        return int(cur.lastrowid)
+
+
+def delete_review(review_id: int) -> bool:
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute("DELETE FROM reviews WHERE id = ?", (review_id,))
+        return conn.total_changes > 0
+
+
+def get_gallery_items() -> list[dict]:
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            "SELECT * FROM gallery_items ORDER BY created_at DESC"
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def add_gallery_item(title: str, image_url: str) -> int:
+    with sqlite3.connect(DB_PATH) as conn:
+        cur = conn.execute(
+            """
+            INSERT INTO gallery_items (title, image_url, created_at)
+            VALUES (?, ?, ?)
+            """,
+            (title, image_url, datetime.now().isoformat()),
+        )
+        return int(cur.lastrowid)
+
+
+def delete_gallery_item(item_id: int) -> bool:
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute("DELETE FROM gallery_items WHERE id = ?", (item_id,))
+        return conn.total_changes > 0
