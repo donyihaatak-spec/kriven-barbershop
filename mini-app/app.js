@@ -2,8 +2,8 @@ const tg = window.Telegram?.WebApp;
 if (tg) {
   tg.ready();
   tg.expand();
-  tg.setHeaderColor("#0c0c0c");
-  tg.setBackgroundColor("#0c0c0c");
+  tg.setHeaderColor("#080808");
+  tg.setBackgroundColor("#080808");
 }
 
 const MONTHS = [
@@ -28,6 +28,26 @@ const booking = {
 
 const screen = document.getElementById("screen");
 const tabsEl = document.getElementById("tabs");
+const progressBar = document.getElementById("progressBar");
+const progressFill = document.getElementById("progressFill");
+
+function updateProgress(s) {
+  step = s;
+  if (progressFill) {
+    progressFill.style.width = ((s + 1) / 5) * 100 + "%";
+  }
+}
+
+function setScreenHtml(html) {
+  screen.innerHTML = html;
+  screen.style.animation = "none";
+  void screen.offsetWidth;
+  screen.style.animation = "";
+}
+
+function setProgressVisible(visible) {
+  if (progressBar) progressBar.classList.toggle("hidden", !visible);
+}
 
 function calcPrepayment(total) {
   const cfg = catalog?.config || {};
@@ -69,6 +89,7 @@ function setActiveTab(tab) {
   tabsEl?.querySelectorAll(".tab").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.tab === tab);
   });
+  setProgressVisible(tab === "book");
   if (tab === "book") {
     renderDateScreen();
   } else {
@@ -155,7 +176,8 @@ async function submitBooking() {
 }
 
 function renderPendingScreen(message, paymentCode) {
-  screen.innerHTML = `
+  setProgressVisible(false);
+  setScreenHtml(`
     <div class="success-screen">
       <div class="success-title">Ждём оплату</div>
       ${paymentCode ? `<div class="payment-code">${paymentCode}</div>` : ""}
@@ -276,6 +298,7 @@ async function fetchBookedTimes(isoDate) {
 
 function renderDateScreen() {
   if (activeTab !== "book") return;
+  updateProgress(0);
   hideMainButton();
 
   const { today, max, closed } = getAvailableDates();
@@ -308,7 +331,7 @@ function renderDateScreen() {
   }
 
   html += `</div>`;
-  screen.innerHTML = html;
+  setScreenHtml(html);
 
   document.getElementById("prevMonth").onclick = () => {
     calMonth--;
@@ -330,6 +353,7 @@ function renderDateScreen() {
 }
 
 async function renderTimeScreen() {
+  updateProgress(1);
   hideMainButton();
   await fetchBookedTimes(booking.date);
 
@@ -346,7 +370,7 @@ async function renderTimeScreen() {
       }).join("")}
     </div>
   `;
-  screen.innerHTML = html;
+  setScreenHtml(html);
 
   document.getElementById("backBtn").onclick = renderDateScreen;
   screen.querySelectorAll(".time-slot:not(.taken)").forEach((btn) => {
@@ -367,9 +391,10 @@ function renderServiceCards(items, selectedKey) {
 }
 
 function renderHairScreen() {
+  updateProgress(2);
   hideMainButton();
 
-  screen.innerHTML = `
+  setScreenHtml(`
     <button class="back-btn" id="backBtn">Назад</button>
     <div class="screen-title">Стрижка</div>
     <div class="service-list" id="hairList">
@@ -387,9 +412,10 @@ function renderHairScreen() {
 }
 
 function renderBeardScreen() {
+  updateProgress(3);
   hideMainButton();
 
-  screen.innerHTML = `
+  setScreenHtml(`
     <button class="back-btn" id="backBtn">Назад</button>
     <div class="screen-title">Борода</div>
     <div class="service-list" id="beardList">
@@ -407,6 +433,7 @@ function renderBeardScreen() {
 }
 
 function renderConfirmScreen() {
+  updateProgress(4);
   const hair = catalog.haircuts[booking.haircut];
   const beard = catalog.beards[booking.beard];
   const total = hair.price + beard.price;
@@ -414,7 +441,7 @@ function renderConfirmScreen() {
   const rest = total - prepay;
   const cfg = catalog.config;
 
-  screen.innerHTML = `
+  setScreenHtml(`
     <button class="back-btn" id="backBtn">Назад</button>
     <div class="screen-title">Итого</div>
     <div class="summary">
