@@ -32,6 +32,7 @@ async def handle_catalog(_request: web.Request) -> web.Response:
         text=catalog_for_webapp(),
         content_type="application/json",
         charset="utf-8",
+        headers={"Cache-Control": "public, max-age=120"},
     )
 
 
@@ -175,11 +176,22 @@ async def handle_cancel_booking(request: web.Request) -> web.Response:
 
 
 async def handle_index(_request: web.Request) -> web.Response:
-    return web.FileResponse(MINI_APP_DIR / "index.html")
+    response = web.FileResponse(MINI_APP_DIR / "index.html")
+    response.headers["Cache-Control"] = "no-cache, must-revalidate"
+    return response
+
+
+@web.middleware
+async def static_cache_middleware(request: web.Request, handler):
+    response = await handler(request)
+    path = request.path.lower()
+    if path.endswith((".js", ".css", ".png", ".jpg", ".webp", ".ico")):
+        response.headers.setdefault("Cache-Control", "public, max-age=86400")
+    return response
 
 
 def create_app() -> web.Application:
-    app = web.Application()
+    app = web.Application(middlewares=[static_cache_middleware])
     app.router.add_get("/", handle_index)
     register_admin_routes(app)
     app.router.add_get("/api/catalog", handle_catalog)

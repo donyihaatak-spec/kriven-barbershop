@@ -5,11 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>KRIVEN</title>
   <link rel="icon" type="image/png" href="icon.png" />
+  <style>
+    body { margin: 0; background: #080808; color: #f2f2f2; font-family: system-ui, -apple-system, sans-serif; }
+    .boot-screen { padding: 8px 0 16px; }
+    .boot-title { font-size: 1.35rem; font-weight: 700; margin-bottom: 6px; }
+    .boot-sub { color: #888; margin-bottom: 14px; }
+    .boot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .boot-btn {
+      min-height: 120px; border-radius: 14px; border: 1px solid rgba(255,255,255,.09);
+      background: #141414; color: #f2f2f2; font: inherit; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+    }
+    .boot-icon { font-size: 2rem; }
+    .boot-label { font-weight: 600; }
+  </style>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Unbounded:wght@600;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=5" />
+  <link rel="stylesheet" href="style.css?v=6" />
+  <link rel="preload" href="catalog.js?v=6" as="script" />
+  <link rel="preload" href="app.js?v=7" as="script" />
 </head>
 <body>
   <div class="glow"></div>
@@ -24,7 +37,22 @@
       <div class="progress-fill" id="progressFill"></div>
     </div>
 
-    <main id="screen"></main>
+    <main id="screen">
+      <div class="boot-screen" id="bootScreen">
+        <div class="boot-title">Запись</div>
+        <p class="boot-sub">Что тебе нужно?</p>
+        <div class="boot-grid">
+          <button type="button" class="boot-btn" data-type="haircut">
+            <span class="boot-icon">✂️</span>
+            <span class="boot-label">Стрижка</span>
+          </button>
+          <button type="button" class="boot-btn" data-type="beard">
+            <span class="boot-icon">🧔</span>
+            <span class="boot-label">Борода</span>
+          </button>
+        </div>
+      </div>
+    </main>
 
     <nav class="tabs" id="tabs">
       <button type="button" class="tab active" data-tab="book">Записаться</button>
@@ -32,7 +60,7 @@
     </nav>
   </div>
 
-  <script src="catalog.js?v=5"></script>
-  <script src="app.js?v=6"></script>
+  <script src="catalog.js?v=6"></script>
+  <script src="app.js?v=7" defer></script>
 </body>
 </html>

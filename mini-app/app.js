@@ -67,10 +67,27 @@ function calcPrepayment(total) {
 async function loadCatalog() {
   if (window.KRIVEN_CATALOG) {
     catalog = window.KRIVEN_CATALOG;
+    refreshCatalogInBackground();
     return;
   }
-  const res = await fetch("/api/catalog");
-  catalog = await res.json();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 12000);
+  try {
+    const res = await fetch("/api/catalog", { signal: controller.signal });
+    if (!res.ok) throw new Error("catalog fetch failed");
+    catalog = await res.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function refreshCatalogInBackground() {
+  fetch("/api/catalog")
+    .then((res) => (res.ok ? res.json() : null))
+    .then((data) => {
+      if (data) catalog = data;
+    })
+    .catch(() => {});
 }
 
 function formatPrice(n) {
@@ -131,18 +148,15 @@ async function submitBooking() {
   const haircutKey = booking.serviceType === "haircut" ? booking.haircut : "none";
   const beardKey = booking.serviceType === "beard" ? booking.beard : "none";
   if (!booking.date || !booking.time || !booking.serviceType) {
-    alert("Заполни все поля");
+    tg?.showAlert?.("Заполни все поля");
     return;
   }
   if (booking.serviceType === "haircut" && !booking.haircut) {
-    alert("Выбери стрижку");
+    tg?.showAlert?.("Выбери стрижку");
     return;
   }
   if (booking.serviceType === "beard" && !booking.beard) {
-    alert("Выбери услугу для бороды");
-    return;
-  }
-    tg?.showAlert?.("Заполни все поля");
+    tg?.showAlert?.("Выбери услугу для бороды");
     return;
   }
 
@@ -763,20 +777,51 @@ async function init() {
     btn.onclick = () => setActiveTab(btn.dataset.tab);
   });
 
-  screen.innerHTML = `<div class="loading">Загрузка...</div>`;
+  if (window.KRIVEN_CATALOG) {
+    catalog = window.KRIVEN_CATALOG;
+    refreshCatalogInBackground();
+  }
+
   try {
-    await loadCatalog();
+    if (!catalog) {
+      screen.innerHTML = `<div class="loading">Подключаемся к серверу…</div>`;
+      await loadCatalog();
+    }
+
     if (demo) {
       document.body.classList.add("demo-mode");
       runDemoScreen(demo);
       return;
     }
+
     const startTab = params.get("tab") === "bookings" ? "bookings" : "book";
-    setActiveTab(startTab);
+    if (startTab === "book" && document.getElementById("bootScreen")) {
+      activeTab = "book";
+      setProgressVisible(true);
+      tabsEl?.querySelectorAll(".tab").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.tab === "book");
+      });
+    } else {
+      setActiveTab(startTab);
+    }
   } catch {
-    screen.innerHTML = `<div class="error-msg">Не загрузилось. Закрой и открой снова.</div>`;
+    screen.innerHTML = `<div class="error-msg">Сервер просыпается. Подожди 10 сек и открой снова.</div>`;
   }
 }
+
+function wireBootScreen() {
+  document.querySelectorAll("#bootScreen [data-type], .boot-btn[data-type]").forEach((btn) => {
+    btn.onclick = () => {
+      if (!catalog) return;
+      booking.serviceType = btn.dataset.type;
+      booking.haircut = null;
+      booking.beard = null;
+      renderDateScreen();
+    };
+  });
+}
+
+wireBootScreen();
 
 function buildDemoPendingMessage() {
   const hair = catalog.haircuts.undercut;
